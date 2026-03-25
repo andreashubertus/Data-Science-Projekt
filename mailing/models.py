@@ -14,7 +14,7 @@ class Summary:
     id: int
     title: str
     content: str
-    created_at: str | None = None
+    created_at: str | None = None 
 
 
 @dataclass
