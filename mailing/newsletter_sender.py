@@ -11,3 +11,66 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     7. save results in DB (call db_handler.save_delivery_result(...))
     """
     pass
+
+
+
+"""
+TODO (DB layer):
+
+We need the following DB handler functions for mailing:
+
+1. get_latest_unsent_summary() -> dict
+   Should return:
+   {
+       "id": int,
+       "title": str,
+       "content": str,
+       "created_at": str | None
+   }
+
+2. get_active_subscribers() -> list[dict]
+   Should return:
+   [
+       {
+           "id": int,
+           "email": str,
+           "name": str | None,
+           "active": bool
+       }
+   ]
+
+3. save_delivery_result(
+       summary_id: int,
+       subscriber_id: int,
+       success: bool,
+       error_message: str | None
+   ) -> None
+   Should store the result of sending one email.
+
+4. mark_summary_as_sent(summary_id: int) -> None
+   Should mark summary as already sent to avoid duplicates.
+
+Expected DB tables / fields for mailing:
+
+summaries:
+- id: int
+- title: str
+- content: str
+- created_at: str | None
+- sent: bool
+
+subscribers:
+- id: int
+- email: str
+- name: str | None
+- active: bool
+- subscribed_at: str | None
+
+delivery_results:
+- id: int
+- summary_id: int
+- subscriber_id: int
+- success: bool
+- error_message: str | None
+- sent_at: str | None
+"""
