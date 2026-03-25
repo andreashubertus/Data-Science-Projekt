@@ -1,12 +1,11 @@
-from models import Subscriber, EmailMessage, DeliveryResult
+"""
+Docstring for mailing.newsletter_sender
 
-
-def send_email(subscriber: Subscriber, email_message: EmailMessage) -> DeliveryResult:
-    print(f"Sending to: {subscriber.email}")
-    print(f"Subject: {email_message.subject}")
-
-    return DeliveryResult(
-        subscriber_email=subscriber.email,
-        success=True,
-        error_message=None
-    )
+1. get summary from DB
+2. get subscribers from DB
+3. convert DB data → dataclasses (mappers)
+4. build email content
+5. send to each subscriber
+6. collect results
+7. save results in DB
+"""
