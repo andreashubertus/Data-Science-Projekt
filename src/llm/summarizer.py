@@ -1,7 +1,9 @@
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 from groq import Groq
 
+SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "summarize.txt").read_text(encoding="utf-8")
 load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
@@ -12,7 +14,7 @@ def summarize_article(article: str) -> str:
         messages=[
             {
                 "role": "system",
-                "content": "Du bist ein hilfreicher Assistent der Nachrichtenartikel präzise und neutral zusammenfasst."
+                "content": SYSTEM_PROMPT
             },
             {
                 "role": "user",
