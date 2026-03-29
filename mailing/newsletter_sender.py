@@ -12,7 +12,7 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     5. send to each subscriber
     6. collect results
     7. save results in DB (call db_handler.save_delivery_result(...))
-    8. return a list with a results
+    8. return a list of delivery results
     """
 
     summary_row = db_handler.get_latest_unsent_summary()
