@@ -28,6 +28,10 @@ def summarize_article(article: str) -> str:
 def summarize_unsummarized(db_module) -> int:
     articles = db_module.get_unsummarized_articles()
 
+    if not articles:
+        print("Keine neuen Artikel zum Zusammenfassen.")
+        return 0
+    
     count = 0
 
     with db_module.get_connection() as conn:
@@ -38,10 +42,9 @@ def summarize_unsummarized(db_module) -> int:
                     "UPDATE articles SET summary = ? WHERE id = ?",
                     (summary, article["id"])
                 )
-                print(f"✓ {article['headline'][:60]}...")
                 count += 1
             except Exception as e:
-                print(f"✗ Fehler bei Artikel {article['id']}: {e}")
+                print(f"Fehler bei Artikel {article['id']}: {e}")
         conn.commit()
 
     return count
