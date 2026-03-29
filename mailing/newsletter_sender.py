@@ -1,4 +1,38 @@
 from models import DeliveryResult
+import mappers
+from content_builder import build_email
+from mailer_service import send_email
+
+# Mock function (TODO: replace with an actual db.function)
+def get_latest_unsent_summary():
+    return {
+        "id": 1,
+        "title": "AI Breakthrough in 2026",
+        "content": "Researchers developed a new model that significantly improves reasoning tasks.",
+        "created_at": "2026-03-29"
+    }
+
+# Mock function (TODO: replace with an actual db function)
+def get_active_subscribers():
+    """
+    Temporary mock function for testing.
+    Returns a list of subscribers in the expected DB format.
+    """
+    return [
+        {
+            "id": 1,
+            "email": "user1@example.com",
+            "name": "Alice",
+            "active": True
+        },
+        {
+            "id": 2,
+            "email": "user2@example.com",
+            "name": "Bob",
+            "active": True
+        }
+    ]
+
 
 def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     """
@@ -10,7 +44,19 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     6. collect results
     7. save results in DB (call db_handler.save_delivery_result(...))
     """
-    pass
+
+    summary_row = get_latest_unsent_summary()
+    summary = mappers.to_summary(summary_row)
+
+    subscriber_rows = get_active_subscribers()
+
+    subscribers = [mappers.to_subscriber(row) for row in subscriber_rows]
+
+    email_message = build_email(summary)
+
+    for subscriber in subscribers:
+        result = send_email(subscriber, email_message)
+        #db_handler.save_delivery_result(results)
 
 
 
