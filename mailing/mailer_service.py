@@ -1,4 +1,4 @@
-from models import Subscriber, EmailMessage, DeliveryResult
+from .models import Subscriber, EmailMessage, DeliveryResult
 
 
 def send_email(subscriber: Subscriber, email_message: EmailMessage) -> DeliveryResult:

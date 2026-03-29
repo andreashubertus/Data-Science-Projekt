@@ -1,7 +1,7 @@
-from mailing.models import DeliveryResult
-from mailing import mappers
-from mailing.content_builder import build_email
-from mailing.mailer_service import send_email
+from .models import DeliveryResult
+from . import mappers
+from .content_builder import build_email
+from .mailer_service import send_email
 
 def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     """
@@ -19,7 +19,6 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     summary = mappers.to_summary(summary_row)
 
     subscriber_rows = db_handler.get_active_subscribers()
-
     subscribers = [mappers.to_subscriber(row) for row in subscriber_rows]
 
     email_message = build_email(summary)

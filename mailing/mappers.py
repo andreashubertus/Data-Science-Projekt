@@ -1,5 +1,5 @@
-from models import Subscriber
-from models import Summary
+from .models import Subscriber
+from .models import Summary
 
 
 def to_subscriber(row: dict) -> Subscriber:
