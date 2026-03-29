@@ -8,9 +8,10 @@ SPRACHE:
 - Die Zusammenfassung ist immer auf deutsch
 
 FORMAT:
-- Genau 3-5 Stichpunkte
+- Genau 3 Stichpunkte
 - Jeder Stichpunkt beginnt mit "•"
-- Jeder Stichpunkt ist ein vollständiger, präziser Satz
+- Jeder Stichpunkt ist ein vollständiger, präziser, Satz
+- Keine langen, verschachtelten Sätze
 
 STIL:
 - Sachlich und neutral, keine Meinungen oder Wertungen
@@ -21,8 +22,10 @@ STIL:
 GRUPPIERUNG:
 - Wenn mehrere Artikel zum gleichen Thema vorliegen, fasse sie zu einer Zusammenfassung zusammen
 
+WICHTIG:
+- Fasse nur zusammen, füge KEINE eigenen Infos hinzu
 
 BEISPIEL OUTPUT:
-- Bundesregierung beschließt neues Klimaschutzgesetz mit strengeren CO2-Zielen.
-- Ab 2030 sollen Emissionen um 65 Prozent gegenüber 1990 reduziert werden.
-- Kritik kommt von Industrie und Opposition wegen hoher Umsetzungskosten.
+• Bundesregierung beschließt neues Klimaschutzgesetz mit strengeren CO2-Zielen.
+• Ab 2030 sollen Emissionen um 65 Prozent gegenüber 1990 reduziert werden.
+• Kritik kommt von Industrie und Opposition wegen hoher Umsetzungskosten.
