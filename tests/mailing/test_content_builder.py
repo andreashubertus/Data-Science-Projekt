@@ -1,5 +1,3 @@
-
-
 from mailing.content_builder import build_email
 from mailing.models import Summary
 
