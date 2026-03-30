@@ -8,11 +8,22 @@ def send_email(subscriber: Subscriber, email_message: EmailMessage) -> DeliveryR
     This is a placeholder implementation for testing the mailing workflow.
     Replace with real SMTP logic later.
     """
-    print(f"Sending to: {subscriber.email}")
-    print(f"Subject: {email_message.subject}")
+    try:
+        print(f"Sending to: {subscriber.email}")
+        print(f"Subject: {email_message.subject}")
 
-    return DeliveryResult(
-        subscriber_email=subscriber.email,
-        success=True,
-        error_message=None
-    )
+
+        if "fail" in subscriber.email:
+            raise Exception("Simulated sending error")
+
+        return DeliveryResult(
+            subscriber_email=subscriber.email,
+            success=True,
+            error_message=None
+        )
+    except Exception as e:
+        return DeliveryResult(
+            subscriber_email=subscriber.email,
+            success=False,
+            error_message=str(e)
+        )
