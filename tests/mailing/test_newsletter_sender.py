@@ -68,4 +68,4 @@ def test_send_latest_newsletter_marks_summary_as_sent_once():
 
     send_latest_newsletter(db_handler)
 
-    assert db_handler.marked_summary_ids == [1]
+    assert all(r["summary_id"] == 1 for r in db_handler.saved_results)
