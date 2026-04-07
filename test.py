@@ -40,5 +40,8 @@ class DBConnectionMock:
     def mark_summary_as_sent(self, summary_id):
         print(f"Mock mark_summary_as_sent(summary_id={summary_id})")
 
+def main():
+    send_latest_newsletter(DBConnectionMock())
 
-send_latest_newsletter(DBConnectionMock())
+if __name__ == "__main__":
+    main()

@@ -1,4 +1,6 @@
-from mailing.mappers import to_subscriber, to_summary
+import pytest
+
+from mailing.mappers import MailingDataError, to_subscriber, to_summary
 
 
 def test_to_subscriber_full():
@@ -41,6 +43,16 @@ def test_to_subscriber_active_conversion():
     assert sub.active is False
 
 
+def test_to_subscriber_rejects_missing_email():
+    row = {
+        "id": 4,
+        "email": None
+    }
+
+    with pytest.raises(MailingDataError, match="email"):
+        to_subscriber(row)
+
+
 def test_to_summary_full():
     row = {
         "id": 1,
@@ -67,3 +79,14 @@ def test_to_summary_without_created_at():
     summary = to_summary(row)
 
     assert summary.created_at is None
+
+
+def test_to_summary_rejects_missing_title():
+    row = {
+        "id": 3,
+        "title": None,
+        "content": "Content"
+    }
+
+    with pytest.raises(MailingDataError, match="title"):
+        to_summary(row)

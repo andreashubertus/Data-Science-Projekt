@@ -16,10 +16,16 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     """
 
     summary_row = db_handler.get_latest_unsent_summary()
+    if summary_row is None:
+        return []
+
     summary = mappers.to_summary(summary_row)
 
-    subscriber_rows = db_handler.get_active_subscribers()
+    subscriber_rows = db_handler.get_active_subscribers() or []
     subscribers = [mappers.to_subscriber(row) for row in subscriber_rows]
+
+    if not subscribers:
+        return []
 
     email_message = build_email(summary)
 

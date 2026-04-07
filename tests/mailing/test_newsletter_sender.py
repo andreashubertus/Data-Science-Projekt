@@ -1,4 +1,7 @@
+import pytest
+
 from mailing.newsletter_sender import send_latest_newsletter
+from mailing.mappers import MailingDataError
 
 class DBConnectionMock:
     def __init__(self):
@@ -69,3 +72,39 @@ def test_send_latest_newsletter_marks_summary_as_sent_once():
     send_latest_newsletter(db_handler)
 
     assert all(r["summary_id"] == 1 for r in db_handler.saved_results)
+
+
+def test_send_latest_newsletter_returns_empty_list_when_no_summary():
+    class NoSummaryDB(DBConnectionMock):
+        def get_latest_unsent_summary(self):
+            return None
+
+    results = send_latest_newsletter(NoSummaryDB())
+
+    assert results == []
+
+
+def test_send_latest_newsletter_returns_empty_list_when_no_subscribers():
+    class NoSubscribersDB(DBConnectionMock):
+        def get_active_subscribers(self):
+            return []
+
+    results = send_latest_newsletter(NoSubscribersDB())
+
+    assert results == []
+
+
+def test_send_latest_newsletter_raises_on_invalid_subscriber_data():
+    class InvalidSubscriberDB(DBConnectionMock):
+        def get_active_subscribers(self):
+            return [
+                {
+                    "id": 1,
+                    "email": None,
+                    "name": "Alice",
+                    "active": True,
+                }
+            ]
+
+    with pytest.raises(MailingDataError, match="email"):
+        send_latest_newsletter(InvalidSubscriberDB())

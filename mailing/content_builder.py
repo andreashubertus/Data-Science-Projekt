@@ -1,7 +1,14 @@
 from .models import Summary, EmailMessage
 from datetime import datetime
+from .mappers import MailingDataError
 
 def build_email(summary: Summary) -> EmailMessage:
+    if not summary.title:
+        raise MailingDataError("Cannot build email without a summary title.")
+
+    if not summary.content:
+        raise MailingDataError("Cannot build email without summary content.")
+
     date_str = ""
 
     if summary.created_at:

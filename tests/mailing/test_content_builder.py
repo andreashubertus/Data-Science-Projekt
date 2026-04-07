@@ -1,5 +1,8 @@
+import pytest
+
 from mailing.content_builder import build_email
 from mailing.models import Summary
+from mailing.mappers import MailingDataError
 
 
 def test_build_email_basic():
@@ -57,3 +60,15 @@ def test_build_email_html_structure():
     assert "<html>" in email.html_body
     assert "<h1>" in email.html_body
     assert "<p>" in email.html_body
+
+
+def test_build_email_rejects_missing_content():
+    summary = Summary(
+        id=5,
+        title="Broken",
+        content=None,
+        created_at="2026-03-29"
+    )
+
+    with pytest.raises(MailingDataError, match="content"):
+        build_email(summary)
