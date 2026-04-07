@@ -46,12 +46,19 @@ class DBConnectionMock:
         self.marked_summary_ids.append(summary_id)
 
 
-def test_send_latest_newsletter_returns_result_for_each_subscriber():
+def test_send_latest_newsletter_returns_one_result_per_subscriber():
     db_handler = DBConnectionMock()
 
     results = send_latest_newsletter(db_handler)
 
     assert len(results) == 2
+
+
+def test_send_latest_newsletter_returns_success_for_valid_subscribers():
+    db_handler = DBConnectionMock()
+
+    results = send_latest_newsletter(db_handler)
+
     assert all(result.success is True for result in results)
 
 
@@ -71,7 +78,7 @@ def test_send_latest_newsletter_marks_summary_as_sent_once():
 
     send_latest_newsletter(db_handler)
 
-    assert all(r["summary_id"] == 1 for r in db_handler.saved_results)
+    assert db_handler.marked_summary_ids == [1]
 
 
 def test_send_latest_newsletter_returns_empty_list_when_no_summary():
@@ -84,6 +91,18 @@ def test_send_latest_newsletter_returns_empty_list_when_no_summary():
     assert results == []
 
 
+def test_send_latest_newsletter_does_not_mark_summary_when_no_summary_exists():
+    class NoSummaryDB(DBConnectionMock):
+        def get_latest_unsent_summary(self):
+            return None
+
+    db_handler = NoSummaryDB()
+
+    send_latest_newsletter(db_handler)
+
+    assert db_handler.marked_summary_ids == []
+
+
 def test_send_latest_newsletter_returns_empty_list_when_no_subscribers():
     class NoSubscribersDB(DBConnectionMock):
         def get_active_subscribers(self):
@@ -92,6 +111,18 @@ def test_send_latest_newsletter_returns_empty_list_when_no_subscribers():
     results = send_latest_newsletter(NoSubscribersDB())
 
     assert results == []
+
+
+def test_send_latest_newsletter_does_not_mark_summary_when_no_subscribers_exist():
+    class NoSubscribersDB(DBConnectionMock):
+        def get_active_subscribers(self):
+            return []
+
+    db_handler = NoSubscribersDB()
+
+    send_latest_newsletter(db_handler)
+
+    assert db_handler.marked_summary_ids == []
 
 
 def test_send_latest_newsletter_raises_on_invalid_subscriber_data():

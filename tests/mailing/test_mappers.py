@@ -31,7 +31,7 @@ def test_to_subscriber_defaults():
     assert sub.active is True
 
 
-def test_to_subscriber_active_conversion():
+def test_to_subscriber_converts_zero_active_to_false():
     row = {
         "id": 3,
         "email": "test3@example.com",
@@ -79,6 +79,17 @@ def test_to_summary_without_created_at():
     summary = to_summary(row)
 
     assert summary.created_at is None
+
+
+def test_to_summary_rejects_missing_content():
+    row = {
+        "id": 4,
+        "title": "Title",
+        "content": None
+    }
+
+    with pytest.raises(MailingDataError, match="content"):
+        to_summary(row)
 
 
 def test_to_summary_rejects_missing_title():

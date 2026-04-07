@@ -24,7 +24,7 @@ def test_send_email_success():
 
 
 
-def test_send_email_failure_simulation():
+def test_send_email_returns_failure_for_fail_address():
     subscriber = Subscriber(
         id=2,
         email="fail@example.com",  # triggers simulated failure

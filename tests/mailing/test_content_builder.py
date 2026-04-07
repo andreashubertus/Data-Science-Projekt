@@ -5,7 +5,7 @@ from mailing.models import Summary
 from mailing.mappers import MailingDataError
 
 
-def test_build_email_basic():
+def test_build_email_includes_title_and_content():
     summary = Summary(
         id=1,
         title="Test Title",
@@ -71,4 +71,16 @@ def test_build_email_rejects_missing_content():
     )
 
     with pytest.raises(MailingDataError, match="content"):
+        build_email(summary)
+
+
+def test_build_email_rejects_missing_title():
+    summary = Summary(
+        id=6,
+        title=None,
+        content="Body",
+        created_at="2026-03-29"
+    )
+
+    with pytest.raises(MailingDataError, match="title"):
         build_email(summary)
