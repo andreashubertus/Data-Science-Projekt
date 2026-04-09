@@ -1,10 +1,19 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+import time
+
+
+headers = {
+    'User-Agent': 'DHBW Data science student - Web Scraping for educational purposes)'
+}
+
+
+
 
 def scrape_tagesschau_landing_page():
     url = "https://www.tagesschau.de/"
-    request = requests.get(url)
+    request = requests.get(url, headers=headers)
     if request.status_code != 200:
         print(f"Keine Antwort von der Tagesschau-Website. Status Code: {request.status_code}")
         return None
@@ -19,7 +28,7 @@ def scrape_tagesschau_landing_page():
 def scrape_article(link):
     if not link.startswith("http"):
         link = "https://www.tagesschau.de" + link
-    article_request = requests.get(link)
+    article_request = requests.get(link, headers=headers)
     
     if article_request.status_code != 200:
         print(f"Keine Antwort von der Artikel-Website. Status Code: {article_request.status_code}")
@@ -55,6 +64,7 @@ def scrape_tagesschau():
         pass
         for link in articles_link:
             articles.append(scrape_article(link))
+            time.sleep(2)
     return articles
 
 
