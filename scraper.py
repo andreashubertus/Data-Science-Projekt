@@ -24,10 +24,14 @@ def scrape_article(link):
     if article_request.status_code != 200:
         print(f"Keine Antwort von der Artikel-Website. Status Code: {article_request.status_code}")
         return None
-    article_soup = BeautifulSoup(article_request.text, "html.parser")
-    article_headline = article_soup.find(class_ = "article-head__headline--text").get_text(separator= " ",strip=True)
-    article = article_soup.find_all("p", class_="textabsatz")
-    date = article_soup.find(class_ = "metatextline")
+    try:
+        article_soup = BeautifulSoup(article_request.text, "html.parser")
+        article_headline = article_soup.find(class_ = "article-head__headline--text").get_text(separator= " ",strip=True)
+        article = article_soup.find_all("p", class_="textabsatz")
+        date = article_soup.find(class_ = "metatextline")
+    except AttributeError as e:
+        print(f"Fehler beim Scrapen des Artikels: {e}")
+        return None
     article_text = ""
     for p in article:
         article_text += f"\n {p.get_text(strip = True)}"
@@ -53,7 +57,10 @@ def scrape_tagesschau():
         for link in articles_link:
             articles.append(scrape_article(link))
     for article in articles:
-        print(f"Artikel: {article[0]}\nLink: {article[1]}\nDatum: {article[2]}\nText: {article[3][:200]}...\nScraped am: {article[4]}\n")
+        if article is not None:
+            print(f"Artikel: {article[0]}\nLink: {article[1]}\nDatum: {article[2]}\nText: {article[3][:200]}...\nScraped am: {article[4]}\n")
+
+
 
 if __name__ == "__main__":
     print(scrape_tagesschau())
