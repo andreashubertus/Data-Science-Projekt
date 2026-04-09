@@ -27,7 +27,30 @@ def init_db():
             CREATE TABLE IF NOT EXISTS subscribers (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
                 email        TEXT UNIQUE NOT NULL,
+                name         TEXT,
+                active       INTEGER NOT NULL DEFAULT 1,
                 subscribed_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS summaries (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                title       TEXT NOT NULL,
+                content     TEXT NOT NULL,
+                created_at  TEXT,
+                sent        INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS delivery_results (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                summary_id      INTEGER NOT NULL,
+                subscriber_id   INTEGER NOT NULL,
+                success         INTEGER NOT NULL,
+                error_message   TEXT,
+                delivered_at    TEXT NOT NULL,
+                FOREIGN KEY (summary_id) REFERENCES summaries(id),
+                FOREIGN KEY (subscriber_id) REFERENCES subscribers(id)
             )
         """)
         conn.commit()
@@ -86,14 +109,24 @@ def get_unsummarized_articles():
     return [dict(row) for row in rows]
 
 
-def add_subscriber(email):
+def update_summary(article_id, summary):
+    """Update the summary for a given article by its ID."""
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE articles SET summary = ? WHERE id = ?",
+            (summary, article_id),
+        )
+        conn.commit()
+
+
+def add_subscriber(email, name=None):
     """Add an email to the subscribers list. Returns True if added, False if already exists."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         with get_connection() as conn:
             conn.execute(
-                "INSERT INTO subscribers (email, subscribed_at) VALUES (?, ?)",
-                (email, now),
+                "INSERT INTO subscribers (email, name, subscribed_at) VALUES (?, ?, ?)",
+                (email, name, now),
             )
             conn.commit()
         return True
@@ -114,6 +147,53 @@ def get_all_subscribers():
     with get_connection() as conn:
         rows = conn.execute("SELECT email FROM subscribers ORDER BY subscribed_at").fetchall()
     return [row[0] for row in rows]
+
+
+# ── Mailing-Funktionen (für Vitalii) ──────────────────────────────────
+
+
+def get_latest_unsent_summary():
+    """Return the oldest unsent summary as a dict, or None."""
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT id, title, content, created_at FROM summaries WHERE sent = 0 ORDER BY id ASC LIMIT 1"
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def get_active_subscribers():
+    """Return all active subscribers as a list of dicts."""
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT id, email, name, active FROM subscribers WHERE active = 1 ORDER BY subscribed_at"
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def save_delivery_result(summary_id, subscriber_id, success, error_message=None):
+    """Save one delivery result for a subscriber."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO delivery_results (summary_id, subscriber_id, success, error_message, delivered_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (summary_id, subscriber_id, int(success), error_message, now),
+        )
+        conn.commit()
+
+
+def mark_summary_as_sent(summary_id):
+    """Mark a summary as sent so it won't be sent again."""
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE summaries SET sent = 1 WHERE id = ?",
+            (summary_id,),
+        )
+        conn.commit()
 
 
 if __name__ == "__main__":
