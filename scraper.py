@@ -35,9 +35,8 @@ def scrape_article(link):
     article_text = ""
     for p in article:
         article_text += f"\n {p.get_text(strip = True)}"
-        if len(article_text) < 50:
-            print("Artikeltext zu kurz, überspringe Artikel.")
-            continue
+    if len(article_text) < 50:
+        print("Artikeltext zu kurz, überspringe Artikel.")
     try:
         date = date.get_text(separator= " ",strip=True)
     except:
@@ -56,11 +55,8 @@ def scrape_tagesschau():
         pass
         for link in articles_link:
             articles.append(scrape_article(link))
-    for article in articles:
-        if article is not None:
-            print(f"Artikel: {article[0]}\nLink: {article[1]}\nDatum: {article[2]}\nText: {article[3][:200]}...\nScraped am: {article[4]}\n")
-
+    return articles
 
 
 if __name__ == "__main__":
-    print(scrape_tagesschau())
+    scrape_tagesschau()
