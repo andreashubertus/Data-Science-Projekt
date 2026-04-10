@@ -39,17 +39,18 @@ def scrape_article(link):
         article = article_soup.find_all("p", class_="textabsatz")
         date = article_soup.find(class_ = "metatextline")
     except AttributeError as e:
-        print(f"Fehler beim Scrapen des Artikels: {e}")
+        print(f"Fehler beim Scrapen des Artikels: {e}, link: {link}")
         return None
     article_text = ""
     for p in article:
         article_text += f"\n {p.get_text(strip = True)}"
     if len(article_text) < 50:
         print(f"Artikeltext zu kurz, überspringe Artikel: {link}.")
+        return None
     try:
         date = date.get_text(separator= " ",strip=True)
     except:
-        date = "Kein Datum bezüglich des Standes des Artikels gefunden."
+        date = "Kein Datum bezüglich des Standes des Artikels gefunden. "
     
     return [article_headline, link, date, article_text, datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
 
@@ -60,8 +61,6 @@ def scrape_tagesschau():
         print("Keine Artikel gefunden.")
         return []
     else:
-        print(f"{len(articles_link)} Artikel gefunden. Beginne mit dem Scraping der Artikel...")
-        pass
         for link in articles_link:
             articles.append(scrape_article(link))
             time.sleep(2)
@@ -73,7 +72,9 @@ def scrape_tagesschau():
 
 
 if __name__ == "__main__":
+    print("Starte Tagesschau Scraping")
     tagesschau_articles = scrape_tagesschau()
+
     for article in tagesschau_articles:
         if article is not None:
             print(f"Headline: {article[0]}")
