@@ -12,6 +12,17 @@ load_dotenv()
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def summarize_article(article: str) -> str:
+    """Summarizes a news article using the Groq API.
+
+    Args:
+        article (str): The full text of the news article.
+
+    Returns:
+        str: A summary of the article.
+
+    Raises:
+        groq.GroqError: If the API is unreachable or the key is invalid.
+    """
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
