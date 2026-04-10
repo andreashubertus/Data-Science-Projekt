@@ -4,13 +4,16 @@ from pathlib import Path
 from groq import Groq
 
 SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "summarize.txt").read_text(encoding="utf-8")
+MODEL = "llama-3.3-70b-versatile"
+MAX_TOKENS = 300
+
 load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def summarize_article(article: str) -> str:
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=MODEL,
         messages=[
             {
                 "role": "system",
@@ -21,7 +24,7 @@ def summarize_article(article: str) -> str:
                 "content": article
             }
         ],
-        max_tokens=300
+        max_tokens=MAX_TOKENS
     )
     return response.choices[0].message.content
 
@@ -48,7 +51,7 @@ def summarize_unsummarized(db_module) -> int:
         conn.commit()
 
     return count
-
+    
 if __name__ == "__main__":
     import sys
     sys.path.append(str(Path(__file__).parent.parent))
