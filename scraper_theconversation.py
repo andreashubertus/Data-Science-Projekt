@@ -20,7 +20,19 @@ def get_links_from_theconversation_rss():
 
 
 def scrape_article(link):
-    return [link]
+    if not link.startswith("http"):
+        link = "https://theconversation.com" + link
+        
+    try:
+        article_request = requests.get(link, headers=headers)
+        if article_request.status_code != 200:
+            print(f"Keine Antwort. Status Code: {article_request.status_code}")
+        return link
+            
+        
+    except Exception as e:
+        print(f"Fehler beim Scrapen des Artikels: {e}, link: {link}")
+        return None
 
 
 def scrape_theconversation():
@@ -32,12 +44,14 @@ def scrape_theconversation():
     else:
         for link in articles_link:
             articles.append(scrape_article(link))
-            time.sleep(2)
+            #time.sleep(2)
     return articles
 
 
 if __name__ == "__main__":
+    print("Starte The Conversation Scraping")
     theconversation_articles = scrape_theconversation()
     print("the conversation abgeschlossen")
-    # for article in theconversation_articles:
-    #     print(f"Artikel-Link: {article[1]}")
+    for article in theconversation_articles:
+        if article is not None:
+            print(f"Gefunden: {article}")
