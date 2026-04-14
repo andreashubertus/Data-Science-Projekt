@@ -27,7 +27,37 @@ def scrape_article(link):
         article_request = requests.get(link, headers=headers)
         if article_request.status_code != 200:
             print(f"Keine Antwort. Status Code: {article_request.status_code}")
-        return link
+    
+        article_soup = BeautifulSoup(article_request.text, "html.parser")
+        article_headline = article_soup.find("h1", class_="entry-title").get_text(separator=" ", strip=True)
+        
+        content_div = article_soup.find("div", itemprop="articleBody")
+        article_paragraphs = content_div.find_all("p") if content_div else []
+        
+        article_text = ""
+        for p in article_paragraphs:
+            text = p.get_text(strip=True)
+            if text:
+                article_text += f"\n{text}"
+
+        date_element = article_soup.find("time")
+        if date_element and date_element.has_attr('datetime'):
+            date = date_element.get_text(strip=True)
+        else:
+            date = "Kein Datum gefunden."
+
+        if len(article_text) < 50:
+            print(f"Artikeltext zu kurz, überspringe: {link}.")
+            return None
+
+        return [
+            article_headline, 
+            link, 
+            date, 
+            article_text.strip(), 
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ]
+
             
         
     except Exception as e:
@@ -54,4 +84,9 @@ if __name__ == "__main__":
     print("the conversation abgeschlossen")
     for article in theconversation_articles:
         if article is not None:
-            print(f"Gefunden: {article}")
+            print(f"Headline: {article[0]}")
+            print(f"Link: {article[1]}")
+            print(f"Datum: {article[2]}")
+            print(f"Artikeltext: {article[3][:200]}...")
+            print(f"Scraped am: {article[4]}")
+            print("-" * 80)
