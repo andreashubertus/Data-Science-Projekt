@@ -1,3 +1,11 @@
-mailing_demo.py
+# Environment Variables
+.env
+.env.local
+
+# Python
 __pycache__/
-tests/mailing/__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+venv/
+.env
