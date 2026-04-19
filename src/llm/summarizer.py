@@ -40,14 +40,27 @@ def _summarize_digest(chunk_summaries: list[str])-> str:
     )
     return response.choices[0].message.content
 
-def summarize_by_category(db_module, category, chunk_size=5):
+def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
+    if category not in VALID_CATEGORIES:
+        raise ValueError(f"Invalid category '{category}'. Must be one of {VALID_CATEGORIES}")
+ 
     articles = db_module.get_articles_by_category(category)
-    summaries = [a["summary"] for a in articles if a["summary"]]
-    
-    chunks = [summaries[i:i+chunk_size] for i in range(0, len(summaries), chunk_size)]
-    chunk_summaries = [summarize_article("\n\n".join(chunk)) for chunk in chunks]
-    
-    return summarize_article("\n\n".join(chunk_summaries))
+    texts = [a["text"] for a in articles if a["text"]]
+ 
+    if not texts:
+        return f"No articles available for category {category}."
+ 
+    chunks = [texts[i:i + chunk_size] for i in range(0, len(texts), chunk_size)]
+ 
+    chunk_summaries = []
+    for i, chunk in enumerate(chunks):
+        chunk_summaries.append(_summarize_chunk(chunk))
+ 
+    digest = _summarize_digest(chunk_summaries)
+ 
+    db_module.save_digest(category, digest)
+ 
+    return digest
 
 
 if __name__ == "__main__":
