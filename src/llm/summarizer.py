@@ -61,6 +61,15 @@ def summarize_unsummarized(db_module) -> int:
             print(f"Fehler bei Artikel {article['id']}: {e}")
 
     return count
+
+def summarize_by_category(db_module, category, chunk_size=5):
+    articles = db_module.get_articles_by_category(category)
+    summaries = [a["summary"] for a in articles if a["summary"]]
+    
+    chunks = [summaries[i:i+chunk_size] for i in range(0, len(summaries), chunk_size)]
+    chunk_summaries = [summarize_article("\n\n".join(chunk)) for chunk in chunks]
+    
+    return summarize_article("\n\n".join(chunk_summaries))
     
 if __name__ == "__main__":
     import sys
