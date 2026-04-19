@@ -16,7 +16,7 @@ load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def _summarize_chunk(articles: list[str]) -> str:
+def summarize_chunk(articles: list[str]) -> str:
     combined = "\n\n---\n\n".join(articles)
     response = client.chat.completions.create(
         model=MODEL,
@@ -28,7 +28,7 @@ def _summarize_chunk(articles: list[str]) -> str:
     )
     return response.choices[0].message.content
 
-def _summarize_digest(chunk_summaries: list[str])-> str:
+def summarize_digest(chunk_summaries: list[str])-> str:
     combined = "\n\n".join(chunk_summaries)
     response = client.chat.completions.create(
         model=MODEL,
@@ -54,13 +54,38 @@ def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
  
     chunk_summaries = []
     for i, chunk in enumerate(chunks):
-        chunk_summaries.append(_summarize_chunk(chunk))
+        chunk_summaries.append(summarize_chunk(chunk))
  
-    digest = _summarize_digest(chunk_summaries)
+    digest = summarize_digest(chunk_summaries)
  
     db_module.save_digest(category, digest)
  
     return digest
+
+def build_all_digests(db_module, chunk_size: int = 5) -> dict[str, str]:
+    digests = {}
+    for category in VALID_CATEGORIES:
+        digests[category] = build_category_digest(db_module, category, chunk_size)
+    return digests
+
+def build_newsletter_for_subscriber(db_module, email: str) -> str:
+    categories = db_module.get_subscriber_categories(email)
+ 
+    if not categories:
+        return "No category subscriptions found for this subscriber."
+ 
+    sections = []
+    for category in categories:
+        digest = db_module.get_latest_digest(category)
+        if digest:
+            sections.append(f"## {category.capitalize()}\n\n{digest}")
+ 
+    if not sections:
+        return "No digests available yet for your subscribed categories."
+ 
+    return "\n\n---\n\n".join(sections)
+
+# TODO: DOcstrings for all of the functions!!! And tests!!!
 
 
 if __name__ == "__main__":
@@ -69,4 +94,3 @@ if __name__ == "__main__":
     import db
 
     db.init_db()
-    count = summarize_unsummarized(db)
