@@ -3,11 +3,14 @@ import os
 from pathlib import Path
 from groq import Groq
 
+MODEL = "llama-3.3-70b-versatile"
+MAX_TOKENS_SUMMARIZE = 300
+MAX_TOKENS_CLASSIFY = 10
+
+VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
+
 SUMMARIZE_PROMPT = (Path(__file__).parent / "prompts" / "summarize.txt").read_text(encoding="utf-8")
 CLASSIFY_PROMPT = (Path(__file__).parent / "prompts" / "classify.txt").read_text(encoding="utf-8")
-
-MODEL = "llama-3.3-70b-versatile"
-MAX_TOKENS = 300
 
 load_dotenv()
 
@@ -37,7 +40,7 @@ def summarize_article(article: str) -> str:
                 "content": article
             }
         ],
-        max_tokens=MAX_TOKENS
+        max_tokens=MAX_TOKENS_SUMMARIZE
     )
     return response.choices[0].message.content
 
@@ -67,10 +70,14 @@ def classify_article(article: str) -> str:
             {"role": "system", "content": CLASSIFY_PROMPT},
             {"role": "user", "content": article}
         ],
-        max_tokens=10
+        max_tokens=MAX_TOKENS_CLASSIFY
     )
     category = response.choices[0].message.content.strip().upper()
-
+    
+    if category not in VALID_CATEGORIES:
+        return "POLITICS"
+    
+    return category
 
 if __name__ == "__main__":
     import sys
