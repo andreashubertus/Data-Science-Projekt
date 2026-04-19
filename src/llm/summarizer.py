@@ -64,10 +64,13 @@ def classify_article(article: str) -> str:
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
-            {"role": "system", "content": CLASSIFY_PROMPT}
+            {"role": "system", "content": CLASSIFY_PROMPT},
+            {"role": "user", "content": article}
         ],
+        max_tokens=10
     )
     category = response.choices[0].message.content.strip().upper()
+
 
 if __name__ == "__main__":
     import sys
