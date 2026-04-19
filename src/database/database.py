@@ -20,7 +20,15 @@ def init_db():
                 text        TEXT,
                 scraped_at  TEXT,
                 inserted_at TEXT NOT NULL,
-                summary     TEXT
+                category    TEXT
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS digests (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                category    TEXT NOT NULL,
+                content     TEXT NOT NULL,
+                created_at  TEXT NOT NULL
             )
         """)
         conn.execute("""
@@ -99,24 +107,47 @@ def get_all_articles():
     return [dict(row) for row in rows]
 
 
-def get_unsummarized_articles():
-    """Return articles that have not been summarized yet (for the LLM stage)."""
+def save_digest(category, content):
+    """Save a finished digest for a category. Returns the new digest id."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_connection() as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT * FROM articles WHERE summary IS NULL ORDER BY inserted_at DESC"
-        ).fetchall()
-    return [dict(row) for row in rows]
-
-
-def update_summary(article_id, summary):
-    """Update the summary for a given article by its ID."""
-    with get_connection() as conn:
-        conn.execute(
-            "UPDATE articles SET summary = ? WHERE id = ?",
-            (summary, article_id),
+        cursor = conn.execute(
+            "INSERT INTO digests (category, content, created_at) VALUES (?, ?, ?)",
+            (category, content, now),
         )
         conn.commit()
+        return cursor.lastrowid
+
+
+def get_latest_digest(category):
+    """Return the most recent digest for a category as a dict, or None."""
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            """
+            SELECT id, category, content, created_at
+            FROM digests
+            WHERE category = ?
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+            """,
+            (category,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def get_latest_digests_for_categories(categories):
+    """Return the latest digest per category for the given list of categories.
+
+    Returns a dict mapping category -> digest dict. Categories without any
+    digest are omitted.
+    """
+    result = {}
+    for category in categories:
+        digest = get_latest_digest(category)
+        if digest is not None:
+            result[category] = digest
+    return result
 
 
 def add_subscriber(email, name=None):
@@ -197,10 +228,5 @@ def mark_summary_as_sent(summary_id):
 
 
 if __name__ == "__main__":
-    from scraper import scrape_tagesschau
-
     init_db()
-    print("Scraping articles...")
-    articles = scrape_tagesschau()
-    count = insert_articles(articles)
-    print(f"{count} neue Artikel in die Datenbank eingefügt.")
+    print("Datenbank initialisiert.")
