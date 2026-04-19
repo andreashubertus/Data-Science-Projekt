@@ -1,0 +1,32 @@
+from dotenv import load_dotenv
+import os
+from pathlib import Path
+from groq import Groq
+ 
+MODEL = "llama-3.3-70b-versatile"
+MAX_TOKENS = 10
+ 
+VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
+ 
+CLASSIFY_PROMPT = (Path(__file__).parent / "prompts" / "classify.txt").read_text(encoding="utf-8")
+ 
+load_dotenv()
+ 
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+ 
+ 
+def classify_article(article: str) -> str:
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": CLASSIFY_PROMPT},
+            {"role": "user", "content": article}
+        ],
+        max_tokens=MAX_TOKENS
+    )
+    category = response.choices[0].message.content.strip().upper()
+ 
+    if category not in VALID_CATEGORIES:
+        return "POLITICS"
+
+    return category

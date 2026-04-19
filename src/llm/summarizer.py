@@ -4,8 +4,7 @@ from pathlib import Path
 from groq import Groq
 
 MODEL = "llama-3.3-70b-versatile"
-MAX_TOKENS_SUMMARIZE = 300
-MAX_TOKENS_CLASSIFY = 10
+MAX_TOKENS = 300
 
 VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
 
@@ -40,7 +39,7 @@ def summarize_article(article: str) -> str:
                 "content": article
             }
         ],
-        max_tokens=MAX_TOKENS_SUMMARIZE
+        max_tokens=MAX_TOKENS
     )
     return response.choices[0].message.content
 
@@ -63,22 +62,6 @@ def summarize_unsummarized(db_module) -> int:
 
     return count
     
-def classify_article(article: str) -> str:
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": CLASSIFY_PROMPT},
-            {"role": "user", "content": article}
-        ],
-        max_tokens=MAX_TOKENS_CLASSIFY
-    )
-    category = response.choices[0].message.content.strip().upper()
-    
-    if category not in VALID_CATEGORIES:
-        return "POLITICS"
-    
-    return category
-
 if __name__ == "__main__":
     import sys
     sys.path.append(str(Path(__file__).parent.parent))
