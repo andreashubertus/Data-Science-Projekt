@@ -3,7 +3,9 @@ import os
 from pathlib import Path
 from groq import Groq
 
-SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "summarize.txt").read_text(encoding="utf-8")
+SUMMARIZE_PROMPT = (Path(__file__).parent / "prompts" / "summarize.txt").read_text(encoding="utf-8")
+CLASSIFY_PROMPT = (Path(__file__).parent / "prompts" / "classify.txt").read_text(encoding="utf-8")
+
 MODEL = "llama-3.3-70b-versatile"
 MAX_TOKENS = 300
 
@@ -28,7 +30,7 @@ def summarize_article(article: str) -> str:
         messages=[
             {
                 "role": "system",
-                "content": SYSTEM_PROMPT
+                "content": SUMMARIZE_PROMPT
             },
             {
                 "role": "user",
@@ -66,6 +68,7 @@ def classify_article(article: str) -> str:
         ],
     )
     category = response.choices[0].message.content.strip().upper()
+
 if __name__ == "__main__":
     import sys
     sys.path.append(str(Path(__file__).parent.parent))
