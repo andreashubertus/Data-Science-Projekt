@@ -4,12 +4,13 @@ from pathlib import Path
 from groq import Groq
 
 MODEL = "llama-3.3-70b-versatile"
-MAX_TOKENS = 300
+MAX_TOKENS_CHUNK = 300
+MAX_TOKENS_DIGEST = 500
 
 VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
 
-SUMMARIZE_PROMPT = (Path(__file__).parent / "prompts" / "summarize.txt").read_text(encoding="utf-8")
-CLASSIFY_PROMPT = (Path(__file__).parent / "prompts" / "classify.txt").read_text(encoding="utf-8")
+CHUNK_PROMPT = (Path(__file__).parent / "prompts" / "summarize_chunk.txt").read_text(encoding="utf-8")
+DIGEST_PROMPT = (Path(__file__).parent / "prompts" / "summarize_digest.txt").read_text(encoding="utf-8")
 
 load_dotenv()
 
@@ -27,24 +28,17 @@ def _summarize_chunk(articles: list[str]) -> str:
     )
     return response.choices[0].message.content
 
-def summarize_unsummarized(db_module) -> int:
-    articles = db_module.get_unsummarized_articles()
-
-    if not articles:
-        print("Keine neuen Artikel zum Zusammenfassen.")
-        return 0
-    
-    count = 0
-
-    for article in articles:
-        try:
-            summary = summarize_article(article["text"])
-            db_module.update_summary(article["id"], summary)
-            count += 1
-        except Exception as e:
-            print(f"Fehler bei Artikel {article['id']}: {e}")
-
-    return count
+def _summarize_digest(chunk_summaries: list[str])-> str:
+    combined = "\n\n".join(chunk_summaries)
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": DIGEST_PROMPT},
+            {"role": "user", "content": combined}
+        ],
+        max_tokens=MAX_TOKENS_DIGEST
+    )
+    return response.choices[0].message.content
 
 def summarize_by_category(db_module, category, chunk_size=5):
     articles = db_module.get_articles_by_category(category)
