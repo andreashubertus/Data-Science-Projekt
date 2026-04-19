@@ -15,31 +15,15 @@ load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def summarize_article(article: str) -> str:
-    """Summarizes a news article using the Groq API.
-
-    Args:
-        article (str): The full text of the news article.
-
-    Returns:
-        str: A summary of the article.
-
-    Raises:
-        groq.GroqError: If the API is unreachable or the key is invalid.
-    """
+def _summarize_chunk(articles: list[str]) -> str:
+    combined = "\n\n---\n\n".join(articles)
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
-            {
-                "role": "system",
-                "content": SUMMARIZE_PROMPT
-            },
-            {
-                "role": "user",
-                "content": article
-            }
+            {"role": "system", "content": CHUNK_PROMPT},
+            {"role": "user", "content": combined}
         ],
-        max_tokens=MAX_TOKENS
+        max_tokens=MAX_TOKENS_CHUNK
     )
     return response.choices[0].message.content
 
@@ -70,7 +54,8 @@ def summarize_by_category(db_module, category, chunk_size=5):
     chunk_summaries = [summarize_article("\n\n".join(chunk)) for chunk in chunks]
     
     return summarize_article("\n\n".join(chunk_summaries))
-    
+
+
 if __name__ == "__main__":
     import sys
     sys.path.append(str(Path(__file__).parent.parent))
