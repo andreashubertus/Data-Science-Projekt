@@ -58,6 +58,14 @@ def summarize_unsummarized(db_module) -> int:
 
     return count
     
+def classify_article(article: str) -> str:
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": CLASSIFY_PROMPT}
+        ],
+    )
+    category = response.choices[0].message.content.strip().upper()
 if __name__ == "__main__":
     import sys
     sys.path.append(str(Path(__file__).parent.parent))
