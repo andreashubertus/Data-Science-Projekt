@@ -18,7 +18,7 @@ def scrape_tagesschau_landing_page(request = None):
         if request.status_code != 200:
             print(f"Keine Antwort von der Tagesschau-Website. Status Code: {request.status_code}")
             return None
-    soup = BeautifulSoup(request.content, 'html.parser')
+    soup = BeautifulSoup(request.text, 'html.parser')
     articles = soup.find_all('a', class_='teaser__link')
     if articles == []:
         print("Keine Artikel auf der Tagesschau-Startseite gefunden. Überprüfe die Struktur der Webseite oder die Klasse der Artikel-Links.")
@@ -29,14 +29,14 @@ def scrape_tagesschau_landing_page(request = None):
     return articles_link_list
 
 
-def scrape_article(link):
+def scrape_article(link, article_request = None):
     if not link.startswith("http"):
         link = "https://www.tagesschau.de" + link
-    article_request = requests.get(link, headers=headers)
-    
-    if article_request.status_code != 200:
-        print(f"Keine Antwort von der Artikel-Website. Status Code: {article_request.status_code}")
-        return None
+    if article_request is None:
+        article_request = requests.get(link, headers=headers)     
+        if article_request.status_code != 200:
+            print(f"Keine Antwort von der Artikel-Website. Status Code: {article_request.status_code}")
+            return None
     try:
         found_issues = 0
         article_soup = BeautifulSoup(article_request.text, "html.parser")
