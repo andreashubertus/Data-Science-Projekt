@@ -19,6 +19,9 @@ def scrape_tagesschau_landing_page():
         return None
     soup = BeautifulSoup(request.content, 'html.parser')
     articles = soup.find_all('a', class_='teaser__link')
+    if articles == []:
+        print("Keine Artikel auf der Tagesschau-Startseite gefunden. Überprüfe die Struktur der Webseite oder die Klasse der Artikel-Links.")
+        return None
 
     articles_link_list = [article.get('href') for article in articles if article.get('href')]
 
@@ -34,10 +37,25 @@ def scrape_article(link):
         print(f"Keine Antwort von der Artikel-Website. Status Code: {article_request.status_code}")
         return None
     try:
+        found_issues = 0
         article_soup = BeautifulSoup(article_request.text, "html.parser")
         article_headline = article_soup.find(class_ = "article-head__headline--text").get_text(separator= " ",strip=True)
+        if article_headline is None:
+            print(f"Keine Überschrift gefunden, überspringe Artikel: {link}.")
+            found_issues += 1
         article = article_soup.find_all("p", class_="textabsatz")
+        if article is None:
+            print(f"Keine Artikeltext gefunden, überspringe Artikel: {link}.")
+            found_issues += 1
+
         date = article_soup.find(class_ = "metatextline")
+        if date is None:
+            print(f"Kein Datum gefunden, überspringe Artikel: {link}.")
+            found_issues += 1
+        if found_issues > 0:
+            print(f"Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}. Falls dies häufig vorkommt, überprüfe die Struktur der Webseite.")
+            return None
+
     except AttributeError as e:
         print(f"Fehler beim Scrapen des Artikels: {e}, link: {link}")
         return None
@@ -75,11 +93,11 @@ if __name__ == "__main__":
     print("Starte Tagesschau Scraping")
     tagesschau_articles = scrape_tagesschau()
 
-    for article in tagesschau_articles:
-        if article is not None:
-            print(f"Headline: {article[0]}")
-            print(f"Link: {article[1]}")
-            print(f"Datum: {article[2]}")
-            print(f"Artikeltext: {article[3][:200]}...")  # Ausgabe der ersten 200 Zeichen des Artikels
-            print(f"Scraped am: {article[4]}")
-            print("-" * 80)
+    # for article in tagesschau_articles:
+    #     if article is not None:
+    #         print(f"Headline: {article[0]}")
+    #         print(f"Link: {article[1]}")
+    #         print(f"Datum: {article[2]}")
+    #         print(f"Artikeltext: {article[3][:200]}...")
+    #         print(f"Scraped am: {article[4]}")
+    #         print("-" * 80)
