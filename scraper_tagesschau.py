@@ -11,19 +11,20 @@ headers = {
 
 
 
-def scrape_tagesschau_landing_page():
+def scrape_tagesschau_landing_page(request = None):
     url = "https://www.tagesschau.de/"
-    request = requests.get(url, headers=headers)
-    if request.status_code != 200:
-        print(f"Keine Antwort von der Tagesschau-Website. Status Code: {request.status_code}")
-        return None
+    if request is None:
+        request = requests.get(url, headers=headers)
+        if request.status_code != 200:
+            print(f"Keine Antwort von der Tagesschau-Website. Status Code: {request.status_code}")
+            return None
     soup = BeautifulSoup(request.content, 'html.parser')
     articles = soup.find_all('a', class_='teaser__link')
     if articles == []:
         print("Keine Artikel auf der Tagesschau-Startseite gefunden. Überprüfe die Struktur der Webseite oder die Klasse der Artikel-Links.")
         return None
 
-    articles_link_list = [article.get('href') for article in articles if article.get('href')]
+    articles_link_list = [article.get('href') for article in articles if article.get('href') and article.get('href') not in ["https://www.tagesschau.de","https://www.tagesschau.de/multimedia/podcast/11km/podcast-11km-3504.html"] and not article.get('href').startswith("https://www.tagesschau.de/multimedia/podcast/")]
 
     return articles_link_list
 
@@ -39,12 +40,14 @@ def scrape_article(link):
     try:
         found_issues = 0
         article_soup = BeautifulSoup(article_request.text, "html.parser")
-        article_headline = article_soup.find(class_ = "article-head__headline--text").get_text(separator= " ",strip=True)
+        article_headline = article_soup.find(class_ = "article-head__headline--text")
         if article_headline is None:
             print(f"Keine Überschrift gefunden, überspringe Artikel: {link}.")
             found_issues += 1
+        else:
+            article_headline = article_headline.get_text(separator= " ",strip=True)
         article = article_soup.find_all("p", class_="textabsatz")
-        if article is None:
+        if article is None or article == []:
             print(f"Keine Artikeltext gefunden, überspringe Artikel: {link}.")
             found_issues += 1
 
@@ -56,7 +59,7 @@ def scrape_article(link):
             print(f"Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}. Falls dies häufig vorkommt, überprüfe die Struktur der Webseite.")
             return None
 
-    except AttributeError as e:
+    except Exception as e:
         print(f"Fehler beim Scrapen des Artikels: {e}, link: {link}")
         return None
     article_text = ""
@@ -81,7 +84,7 @@ def scrape_tagesschau():
     else:
         for link in articles_link:
             articles.append(scrape_article(link))
-            time.sleep(2)
+            #time.sleep(2)
     return articles
 
 
@@ -92,12 +95,12 @@ def scrape_tagesschau():
 if __name__ == "__main__":
     print("Starte Tagesschau Scraping")
     tagesschau_articles = scrape_tagesschau()
-
-    # for article in tagesschau_articles:
-    #     if article is not None:
-    #         print(f"Headline: {article[0]}")
-    #         print(f"Link: {article[1]}")
-    #         print(f"Datum: {article[2]}")
-    #         print(f"Artikeltext: {article[3][:200]}...")
-    #         print(f"Scraped am: {article[4]}")
-    #         print("-" * 80)
+    print("Tagesschau abgeschlossen")
+    for article in tagesschau_articles:
+        if article is not None:
+            print(f"Headline: {article[0]}")
+            print(f"Link: {article[1]}")
+            print(f"Datum: {article[2]}")
+            print(f"Artikeltext: {article[3][:200]}...")
+            print(f"Scraped am: {article[4]}")
+            print("-" * 80)

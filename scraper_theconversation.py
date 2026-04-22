@@ -14,35 +14,40 @@ def get_links_from_theconversation_rss():
     rss_url = "https://theconversation.com/global/articles.atom"
     request = requests.get(rss_url, headers=headers)
     soup = BeautifulSoup(request.content, "xml")
-    links = [link['href'] for link in soup.find_all('link') if 'rel' in link.attrs and link['rel'] == 'alternate']
+    links = [link['href'] for link in soup.find_all('link') if 'rel' in link.attrs and link['rel'] == 'alternate' and link['href'] not in ["https://theconversation.com"]]
     
     return links
 
 
-def scrape_article(link):
+def scrape_article(link , article_request = None):
     if not link.startswith("http"):
         link = "https://theconversation.com" + link
-    article_request = requests.get(link, headers=headers)
-    if article_request.status_code != 200:
-        print(f"Keine Antwort. Status Code: {article_request.status_code}")
+    if article_request is None:
+        article_request = requests.get(link, headers=headers)
+        if article_request.status_code != 200:
+            print(f"Keine Antwort. Status Code: {article_request.status_code}")
       
     try:
         found_issues = 0
-        
+        error_messages = f""
         article_soup = BeautifulSoup(article_request.text, "html.parser")
-        article_headline = article_soup.find("h1", class_="entry-title").get_text(separator=" ", strip=True)
+
+        article_headline = article_soup.find("h1", class_="entry-title")
         if article_headline is None:
-            print(f"Keine Überschrift gefunden, überspringe Artikel: {link}.")
+            error_messages += f"Keine Überschrift gefunden.\n"
             found_issues += 1
-        
+        else:
+            article_headline = article_headline.get_text(separator=" ", strip=True)
+
         content_div = article_soup.find("div", itemprop="articleBody")
         if content_div is None:
-            print(f"Kein Artikeltext gefunden, überspringe Artikel: {link}.")
+            error_messages += f"Kein Artikeltext gefunden.\n"
             found_issues += 1
-        article_paragraphs = content_div.find_all("p") if content_div else []
-        if not article_paragraphs:
-            print(f"Keine Artikeltext gefunden, überspringe Artikel: {link}.")
-            found_issues += 1
+        else:
+            article_paragraphs = content_div.find_all("p") if content_div else None
+            if article_paragraphs == None:
+                error_messages += f"Keine Absätze gefunden.\n"
+                found_issues += 1
         date_element = article_soup.find("time")
         if date_element and date_element.has_attr('datetime'):
             date = date_element.get_text(strip=True)
@@ -50,7 +55,7 @@ def scrape_article(link):
             date = f"Kein Datum gefunden."
 
         if found_issues > 0:
-            print(f"Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}. Falls dies häufig vorkommt, überprüfe die Struktur der Webseite.")
+            print(f"{error_messages}Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}.\nFalls dies häufig vorkommt, überprüfe die Struktur der Webseite.\n")
             return None
         
     except Exception as e:
@@ -82,6 +87,7 @@ def scrape_article(link):
 def scrape_theconversation():
     articles = []
     articles_link = get_links_from_theconversation_rss()
+    articles_link = articles_link
     if articles_link is None:
         print("Keine Artikel gefunden.")
         return []
@@ -95,7 +101,7 @@ def scrape_theconversation():
 if __name__ == "__main__":
     print("Starte The Conversation Scraping")
     theconversation_articles = scrape_theconversation()
-    print("the conversation abgeschlossen")
+    print("The Conversation abgeschlossen")
     for article in theconversation_articles:
         if article is not None:
             print(f"Headline: {article[0]}")
