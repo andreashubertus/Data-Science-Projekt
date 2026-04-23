@@ -11,6 +11,7 @@ headers = {
 
 
 def get_links_from_theconversation_rss(request=None):
+    errormessage = ""
     rss_url = "https://theconversation.com/global/articles.atom"
 
     if request is None:
@@ -27,7 +28,56 @@ def get_links_from_theconversation_rss(request=None):
     return links, errormessage
 
 
+def get_article_headline(article_soup, link, errormessage, found_issues):
+    article_headline = article_soup.find("h1", class_="entry-title")
+    if article_headline is None:
+        errormessage += f"Keine Überschrift gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+    else:
+        article_headline = article_headline.get_text(separator=" ", strip=True)
+    return article_headline, errormessage, found_issues
+
+
+def get_article_text(article_soup, link, errormessage, found_issues):
+    content_div = article_soup.find("div", itemprop="articleBody")
+    if content_div is None:
+        errormessage += f"Keine Artikeltext gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+        return "", errormessage, found_issues
+
+    paragraphs = content_div.find_all("p")
+    if not paragraphs:
+        errormessage += f"Keine Absätze gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+        return "", errormessage, found_issues
+
+    article_text = ""
+    for p in paragraphs:
+        text = p.get_text(strip=True)
+        if text:
+            article_text += f"\n{text}"
+
+    if len(article_text) < 50:
+        errormessage += f"Artikeltext zu kurz, überspringe Artikel: {link}.\n"
+        found_issues += 1
+
+    return article_text, errormessage, found_issues
+
+
+def get_article_date(article_soup, link, errormessage, found_issues):
+    date_element = article_soup.find("time")
+    if date_element is None or not date_element.has_attr('datetime'):
+        errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+        return "Kein Datum gefunden.\n", errormessage, found_issues
+
+    article_date = date_element.get_text(strip=True)
+    return article_date, errormessage, found_issues
+
+
 def scrape_article(link , article_request = None):
+    error_message = ""
+
     if not link.startswith("http"):
         link = "https://theconversation.com" + link
     if article_request is None:
@@ -37,54 +87,25 @@ def scrape_article(link , article_request = None):
       
     try:
         found_issues = 0
-        error_messages = f""
         article_soup = BeautifulSoup(article_request.text, "html.parser")
 
-        article_headline = article_soup.find("h1", class_="entry-title")
-        if article_headline is None:
-            error_messages += f"Keine Überschrift gefunden.\n"
-            found_issues += 1
-        else:
-            article_headline = article_headline.get_text(separator=" ", strip=True)
+        article_headline, error_message, found_issues = get_article_headline(article_soup, link, error_message, found_issues)
+        article_text, error_message, found_issues = get_article_text(article_soup, link, error_message, found_issues)
+        article_date, error_message, found_issues = get_article_date(article_soup, link, error_message, found_issues)
 
-        content_div = article_soup.find("div", itemprop="articleBody")
-        if content_div is None:
-            error_messages += f"Kein Artikeltext gefunden.\n"
-            found_issues += 1
-        else:
-            article_paragraphs = content_div.find_all("p") if content_div else None
-            if article_paragraphs == None:
-                error_messages += f"Keine Absätze gefunden.\n"
-                found_issues += 1
-        date_element = article_soup.find("time")
-        if date_element and date_element.has_attr('datetime'):
-            date = date_element.get_text(strip=True)
-        else:
-            date = f"Kein Datum gefunden."
-
+        
         if found_issues > 0:
-            print(f"{error_messages}Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}.\nFalls dies häufig vorkommt, überprüfe die Struktur der Webseite.\n")
+            print(f"{error_message}Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}.\nFalls dies häufig vorkommt, überprüfe die Struktur der Webseite.\n")
             return None
         
     except Exception as e:
-        print(f"Fehler beim Scrapen des Artikels: {e}, link: {link}")
-        
-    article_text = ""
-    for p in article_paragraphs:
-        text = p.get_text(strip=True)
-        if text:
-            article_text += f"\n{text}"
-
-    
-
-    if len(article_text) < 50:
-        print(f"Artikeltext zu kurz, überspringe: {link}.")
-        return None
+        errormessage += f"Fehler beim Scrapen des Artikels: {e}, link: {link}"
+        return None,error_message
 
     return [
         article_headline, 
         link, 
-        date, 
+        article_date, 
         article_text.strip(), 
         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ]
@@ -94,22 +115,24 @@ def scrape_article(link , article_request = None):
 
 def scrape_theconversation():
     articles = []
-    articles_link = get_links_from_theconversation_rss()
+    articles_link, error_message = get_links_from_theconversation_rss()
     articles_link = articles_link
     if articles_link is None:
-        print("Keine Artikel gefunden.")
+        print(error_message)
         return []
     else:
         for link in articles_link:
             articles.append(scrape_article(link))
             #time.sleep(2)
-    return articles
+    return articles, error_message
 
 
 if __name__ == "__main__":
     print("Starte The Conversation Scraping")
-    theconversation_articles = scrape_theconversation()
+    theconversation_articles,error_message = scrape_theconversation()
     print("The Conversation abgeschlossen")
+    if error_message:
+        print(f"Fehlermeldungen: {error_message}")
     for article in theconversation_articles:
         if article is not None:
             print(f"Headline: {article[0]}")
