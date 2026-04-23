@@ -43,6 +43,9 @@ def summarize_chunk(articles: list[str]) -> str:
     Raises:
         groq.APIError: On connection or authentication errors.
     """
+    if not articles:
+        return ""
+    
     combined = "\n\n---\n\n".join(articles)
     response = client.chat.completions.create(
         model=MODEL,
@@ -67,6 +70,9 @@ def summarize_digest(chunk_summaries: list[str])-> str:
     Raises:
         groq.APIError: On connection or authentication errors.
     """
+    if not chunk_summaries:
+        return ""
+    
     combined = "\n\n".join(chunk_summaries)
     response = client.chat.completions.create(
         model=MODEL,
@@ -164,8 +170,6 @@ def build_newsletter_for_subscriber(db_module, email: str) -> str:
         return "No digests available yet for your subscribed categories."
  
     return "\n\n---\n\n".join(sections)
-
-# TODO: DOcstrings for all of the functions!!! And tests!!!
 
 
 if __name__ == "__main__":
