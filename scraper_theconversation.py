@@ -10,13 +10,21 @@ headers = {
     
 
 
-def get_links_from_theconversation_rss():
+def get_links_from_theconversation_rss(request=None):
     rss_url = "https://theconversation.com/global/articles.atom"
-    request = requests.get(rss_url, headers=headers)
+
+    if request is None:
+        request = requests.get(rss_url, headers=headers)
+    if request.status_code != 200:
+        errormessage += f"Keine Antwort vom TheConversation RSS-Feed. Status Code: {request.status_code}"
+        return None, errormessage
     soup = BeautifulSoup(request.content, "xml")
     links = [link['href'] for link in soup.find_all('link') if 'rel' in link.attrs and link['rel'] == 'alternate' and link['href'] not in ["https://theconversation.com"]]
     
-    return links
+    if not links:
+        errormessage += "Keine Artikel im TheConversation RSS-Feed gefunden. Überprüfe die Struktur des Feeds."
+        return None, errormessage
+    return links, errormessage
 
 
 def scrape_article(link , article_request = None):
