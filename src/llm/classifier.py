@@ -1,7 +1,17 @@
+"""
+Classifies a news article into one of the predefined categories using an LLM.
+ 
+The LLM is expected to respond with a single uppercase category word.
+If the response is not a valid category, the article is assigned a fallback.
+"""
+
 from dotenv import load_dotenv
 import os
 from pathlib import Path
 from groq import Groq
+import logging
+ 
+logger = logging.getLogger(__name__)
  
 MODEL = "llama-3.3-70b-versatile"
 MAX_TOKENS = 10
@@ -17,6 +27,23 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
  
  
 def classify_article(article: str) -> str:
+    """Classifies a news article into one of the predefined categories.
+ 
+    Sends the article to the LLM with a classification prompt and parses
+    the response. If the model returns an unrecognized category, a fallback
+    value is returned and a warning is logged.
+ 
+    Args:
+        article: Raw text of the news article to classify.
+ 
+    Returns:
+        One of the strings in :data:`VALID_CATEGORIES`, or
+        :data:`FALLBACK_CATEGORY` if the model response was invalid.
+ 
+    Raises:
+        ValueError: If ``article`` is empty or blank.
+        groq.APIError: On connection or authentication errors.
+    """
     if not article or not article.strip():
         raise ValueError("Article text must not be empty.")
     
