@@ -112,9 +112,9 @@ def scrape_article(link, article_request = None):
 
 def scrape_tagesschau():
     articles = []
-    articles_link = scrape_tagesschau_landing_page()
+    articles_link, error = scrape_tagesschau_landing_page()
     if articles_link is None:
-        print("Keine Artikel gefunden.")
+        print(error)
         return []
     else:
         for link in articles_link:
