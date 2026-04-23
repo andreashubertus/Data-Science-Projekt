@@ -5,6 +5,7 @@ from groq import Groq
  
 MODEL = "llama-3.3-70b-versatile"
 MAX_TOKENS = 10
+FALLBACK_CATEGORY = "UNCATEGORIZED"
  
 VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
  
@@ -16,6 +17,9 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
  
  
 def classify_article(article: str) -> str:
+    if not article or not article.strip():
+        raise ValueError("Article text must not be empty.")
+    
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
@@ -27,6 +31,11 @@ def classify_article(article: str) -> str:
     category = response.choices[0].message.content.strip().upper()
  
     if category not in VALID_CATEGORIES:
-        return "POLITICS"
-
+        logger.warning(
+            "LLM returned unrecognized category %r — falling back to %r.",
+            category,
+            FALLBACK_CATEGORY,
+        )
+        return FALLBACK_CATEGORY
+ 
     return category
