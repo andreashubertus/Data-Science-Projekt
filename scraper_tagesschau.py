@@ -28,9 +28,11 @@ def scrape_tagesschau_landing_page(request = None):
     url = "https://www.tagesschau.de/"
     if request is None:
         request = requests.get(url, headers=headers)
-        if request.status_code != 200:
-            errormessage += f"Keine Antwort von der Tagesschau-Website. Status Code: {request.status_code}"
-            return None,errormessage
+    
+    if request.status_code != 200:
+        errormessage += f"Keine Antwort von der Tagesschau-Website. Status Code: {request.status_code}"
+        return None, errormessage
+    
     soup = BeautifulSoup(request.text, 'html.parser')
     articles = soup.find_all('a', class_='teaser__link')
     if articles == []:
@@ -39,7 +41,7 @@ def scrape_tagesschau_landing_page(request = None):
 
     articles_link_list = [a.get('href') for a in articles if is_valid_link(a.get('href'))]
 
-    return articles_link_list
+    return articles_link_list, errormessage
 
 
 def get_article_headline(article_soup, link, errormessage, found_issues):
@@ -56,6 +58,7 @@ def get_article_text(article_soup, link, errormessage, found_issues):
     if article is None or article == []:
         errormessage += f"Keine Artikeltext gefunden, überspringe Artikel: {link}.\n"
         found_issues += 1
+        article_text = ""
     
     else:
         article_text = ""
@@ -73,9 +76,9 @@ def get_article_date(article_soup, link, errormessage, found_issues):
         errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}.\n"
         found_issues += 1
     try:
-        article_date = article_date.get_text(separator= " ",strip=True)
+        article_date = date.get_text(separator= " ",strip=True)
     except:
-        article_date = "Kein Datum bezüglich des Standes des Artikels gefunden. "
+        article_date = "Kein Datum bezüglich des Standes des Artikels gefunden.\n"
     return article_date, errormessage, found_issues
 
 def scrape_article(link, article_request = None):
