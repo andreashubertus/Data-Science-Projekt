@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagigMock, patch, call
+from unittest.mock import MagicMock, patch, call
 
 # Helpers / Fixtures:
 
@@ -29,19 +29,19 @@ class TestSummarizeChunk:
 
     def test_returns_llm_response(self):
         """summarize_chunk should return the text provided by the LLM."""
-        with patch("summarizer.client") as mock_client:
+        with patch("src.llm.summarizer.client") as mock_client:
             mock_client.chat.completions.create.return_value = _make_groq_response(
                 "Short summary."
             )
-            from summarizer import summarize_chunk
+            from src.llm.summarizer import summarize_chunk
             result = summarize_chunk(["Article 1", "Article 2"])
         assert result == "Short summary."
  
     def test_articles_are_joined_with_separator(self):
         """Articles should be joined with '---' before being sent to the API."""
-        with patch("summarizer.client") as mock_client:
+        with patch("src.llm.summarizer.client") as mock_client:
             mock_client.chat.completions.create.return_value = _make_groq_response("x")
-            from summarizer import summarize_chunk
+            from src.llm.summarizer import summarize_chunk
             summarize_chunk(["A", "B", "C"])
  
         call_kwargs = mock_client.chat.completions.create.call_args
@@ -53,19 +53,19 @@ class TestSummarizeChunk:
  
     def test_empty_list_returns_empty_string(self):
         """An empty input should produce no API call and return an empty string."""
-        with patch("summarizer.client") as mock_client:
-            from summarizer import summarize_chunk
+        with patch("src.llm.summarizer.client") as mock_client:
+            from src.llm.summarizer import summarize_chunk
             result = summarize_chunk([])
         mock_client.chat.completions.create.assert_not_called()
         assert result == ""
  
     def test_single_article(self):
         """A single article should be processed correctly."""
-        with patch("summarizer.client") as mock_client:
+        with patch("src.llm.summarizer.client") as mock_client:
             mock_client.chat.completions.create.return_value = _make_groq_response(
                 "Single article summary"
             )
-            from summarizer import summarize_chunk
+            from src.llm.summarizer import summarize_chunk
             result = summarize_chunk(["Just one article"])
         assert result == "Single article summary"
 
@@ -76,19 +76,19 @@ class TestSummarizeDigest:
  
     def test_returns_llm_response(self):
         """summarize_digest should return the LLM text."""
-        with patch("summarizer.client") as mock_client:
+        with patch("src.llm.summarizer.client") as mock_client:
             mock_client.chat.completions.create.return_value = _make_groq_response(
                 "Overall digest"
             )
-            from summarizer import summarize_digest
+            from src.llm.summarizer import summarize_digest
             result = summarize_digest(["Summary 1", "Summary 2"])
         assert result == "Overall digest"
  
     def test_summaries_are_joined(self):
         """Chunk summaries should be joined before being sent to the API."""
-        with patch("summarizer.client") as mock_client:
+        with patch("src.llm.summarizer.client") as mock_client:
             mock_client.chat.completions.create.return_value = _make_groq_response("x")
-            from summarizer import summarize_digest
+            from src.llm.summarizer import summarize_digest
             summarize_digest(["Part A", "Part B"])
  
         user_content = (
@@ -99,8 +99,8 @@ class TestSummarizeDigest:
  
     def test_empty_list_returns_empty_string(self):
         """Empty input → no API call, empty string returned."""
-        with patch("summarizer.client") as mock_client:
-            from summarizer import summarize_digest
+        with patch("src.llm.summarizer.client") as mock_client:
+            from src.llm.summarizer import summarize_digest
             result = summarize_digest([])
         mock_client.chat.completions.create.assert_not_called()
         assert result == ""
@@ -113,14 +113,14 @@ class TestBuildCategoryDigest:
  
     def test_invalid_category_raises_value_error(self):
         """Invalid categories should raise a ValueError."""
-        from summarizer import build_category_digest
+        from src.llm.summarizer import build_category_digest
         db = _make_db()
         with pytest.raises(ValueError, match="Invalid category"):
             build_category_digest(db, "INVALID")
  
     def test_no_articles_returns_info_message(self):
         """When no articles exist, an info message should be returned."""
-        from summarizer import build_category_digest
+        from src.llm.summarizer import build_category_digest
         db = _make_db(articles=[])
         result = build_category_digest(db, "SPORTS")
         assert "SPORTS" in result
@@ -128,7 +128,7 @@ class TestBuildCategoryDigest:
  
     def test_articles_with_empty_text_are_ignored(self):
         """Articles with no text (None or empty string) should be filtered out."""
-        from summarizer import build_category_digest
+        from src.llm.summarizer import build_category_digest
         db = _make_db(articles=[{"text": ""}, {"text": None}])
         result = build_category_digest(db, "SPORTS")
         assert "available" in result.lower()
@@ -136,10 +136,10 @@ class TestBuildCategoryDigest:
     def test_digest_is_saved_to_db(self):
         """The finished digest should be persisted to the database exactly once."""
         with (
-            patch("summarizer.summarize_chunk", return_value="chunk-summary"),
-            patch("summarizer.summarize_digest", return_value="final-digest"),
+            patch("src.llm.summarizer.summarize_chunk", return_value="chunk-summary"),
+            patch("src.llm.summarizer.summarize_digest", return_value="final-digest"),
         ):
-            from summarizer import build_category_digest
+            from src.llm.summarizer import build_category_digest
             db = _make_db(articles=[{"text": "Article A"}])
             build_category_digest(db, "TECHNOLOGY")
  
@@ -148,10 +148,10 @@ class TestBuildCategoryDigest:
     def test_returns_digest_text(self):
         """build_category_digest should return the digest text."""
         with (
-            patch("summarizer.summarize_chunk", return_value="chunk-summary"),
-            patch("summarizer.summarize_digest", return_value="final-digest"),
+            patch("src.llm.summarizer.summarize_chunk", return_value="chunk-summary"),
+            patch("src.llm.summarizer.summarize_digest", return_value="final-digest"),
         ):
-            from summarizer import build_category_digest
+            from src.llm.summarizer import build_category_digest
             db = _make_db(articles=[{"text": "Article A"}])
             result = build_category_digest(db, "TECHNOLOGY")
  
@@ -166,10 +166,10 @@ class TestBuildCategoryDigest:
             return "summary"
  
         with (
-            patch("summarizer.summarize_chunk", side_effect=fake_summarize_chunk),
-            patch("summarizer.summarize_digest", return_value="digest"),
+            patch("src.llm.summarizer.summarize_chunk", side_effect=fake_summarize_chunk),
+            patch("src.llm.summarizer.summarize_digest", return_value="digest"),
         ):
-            from summarizer import build_category_digest
+            from src.llm.summarizer import build_category_digest
             articles = [{"text": f"Article {i}"} for i in range(7)]
             db = _make_db(articles=articles)
             build_category_digest(db, "ECONOMY", chunk_size=3)
@@ -179,7 +179,7 @@ class TestBuildCategoryDigest:
  
     def test_all_valid_categories_accepted(self):
         """All valid categories should be accepted without raising an error."""
-        from summarizer import build_category_digest, VALID_CATEGORIES
+        from src.llm.summarizer import build_category_digest, VALID_CATEGORIES
         for category in VALID_CATEGORIES:
             db = _make_db(articles=[])
             result = build_category_digest(db, category)
@@ -192,8 +192,8 @@ class TestBuildAllDigests:
  
     def test_returns_digest_for_every_category(self):
         """There should be one entry in the result dict for every valid category."""
-        from summarizer import build_all_digests, VALID_CATEGORIES
-        with patch("summarizer.build_category_digest", return_value="digest") as mock_bcd:
+        from src.llm.summarizer import build_all_digests, VALID_CATEGORIES
+        with patch("src.llm.summarizer.build_category_digest", return_value="digest") as mock_bcd:
             db = _make_db()
             result = build_all_digests(db)
  
@@ -202,8 +202,8 @@ class TestBuildAllDigests:
  
     def test_chunk_size_is_passed_through(self):
         """The chunk_size parameter should be forwarded to build_category_digest."""
-        from summarizer import build_all_digests
-        with patch("summarizer.build_category_digest", return_value="d") as mock_bcd:
+        from src.llm.summarizer import build_all_digests
+        with patch("src.llm.summarizer.build_category_digest", return_value="d") as mock_bcd:
             db = _make_db()
             build_all_digests(db, chunk_size=10)
  
@@ -218,14 +218,14 @@ class TestBuildNewsletterForSubscriber:
  
     def test_no_subscriptions_returns_info_message(self):
         """Without any subscriptions an appropriate message should be returned."""
-        from summarizer import build_newsletter_for_subscriber
+        from src.llm.summarizer import build_newsletter_for_subscriber
         db = _make_db(subscriber_categories=[])
         result = build_newsletter_for_subscriber(db, "user@example.com")
         assert "no" in result.lower() or "none" in result.lower() or "subscription" in result.lower()
  
     def test_no_digests_available_returns_info_message(self):
         """When no digests exist in the database an info message should follow."""
-        from summarizer import build_newsletter_for_subscriber
+        from src.llm.summarizer import build_newsletter_for_subscriber
         db = _make_db(
             subscriber_categories=["SPORTS", "CULTURE"],
             latest_digest=None,
@@ -235,7 +235,7 @@ class TestBuildNewsletterForSubscriber:
  
     def test_newsletter_contains_category_headings(self):
         """The newsletter should contain a Markdown heading for each category."""
-        from summarizer import build_newsletter_for_subscriber
+        from src.llm.summarizer import build_newsletter_for_subscriber
         db = _make_db(
             subscriber_categories=["SPORTS"],
             latest_digest="Latest sports news.",
@@ -246,7 +246,7 @@ class TestBuildNewsletterForSubscriber:
  
     def test_multiple_categories_are_separated(self):
         """Multiple categories should be separated by '---'."""
-        from summarizer import build_newsletter_for_subscriber
+        from src.llm.summarizer import build_newsletter_for_subscriber
  
         db = MagicMock()
         db.get_subscriber_categories.return_value = ["SPORTS", "CULTURE"]
@@ -259,7 +259,7 @@ class TestBuildNewsletterForSubscriber:
  
     def test_categories_without_digest_are_skipped(self):
         """Categories without an existing digest should be absent from the newsletter."""
-        from summarizer import build_newsletter_for_subscriber
+        from src.llm.summarizer import build_newsletter_for_subscriber
  
         db = MagicMock()
         db.get_subscriber_categories.return_value = ["SPORTS", "CULTURE"]
@@ -274,7 +274,7 @@ class TestBuildNewsletterForSubscriber:
  
     def test_correct_email_is_queried(self):
         """The correct email address should be passed to the database."""
-        from summarizer import build_newsletter_for_subscriber
+        from src.llm.summarizer import build_newsletter_for_subscriber
         db = _make_db(subscriber_categories=[])
         build_newsletter_for_subscriber(db, "test@domain.com")
         db.get_subscriber_categories.assert_called_once_with("test@domain.com")
