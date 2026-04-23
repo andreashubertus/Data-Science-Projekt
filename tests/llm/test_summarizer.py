@@ -1,3 +1,13 @@
+"""
+Full test suite for the ``summarizer`` module.
+ 
+All tests are unit tests: external dependencies (Groq API, database) are
+replaced with ``unittest.mock`` stubs so no real network calls are made.
+ 
+Run with:
+    pytest tests/test_summarizer.py -v
+"""
+ 
 import pytest
 from unittest.mock import MagicMock, patch, call
 

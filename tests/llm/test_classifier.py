@@ -1,3 +1,12 @@
+"""
+Full test suite for the ``classifier`` module.
+ 
+All tests are unit tests: the Groq API client is replaced with
+``unittest.mock`` stubs so no real network calls are made.
+ 
+Run with:
+    pytest tests/test_classifier.py -v
+"""
 import pytest
 from unittest.mock import MagicMock, patch
  
@@ -11,10 +20,10 @@ def _make_groq_response(text: str) -> MagicMock:
  
  
 def _patch_client(return_text: str):
-    """Context manager that patches ``src.llm.src.llm.src.llm.classifier.client`` and sets its return value."""
+    """Context manager that patches ``src.llm.classifier.client`` and sets its return value."""
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value = _make_groq_response(return_text)
-    return patch("src.llm.src.llm.src.llm.classifier.client", mock_client)
+    return patch("src.llm.classifier.client", mock_client)
 
 # Tests: valid categories
 
@@ -30,7 +39,7 @@ class TestClassifyArticleValidCategories:
         exact string when the LLM responds with it.
         """
         with _patch_client(category):
-            from src.llm.src.llm.src.llm.classifier import classify_article
+            from src.llm.classifier import classify_article
             result = classify_article("Some article text.")
         assert result == category
  
@@ -41,7 +50,7 @@ class TestClassifyArticleValidCategories:
         For example '  SPORTS\\n' should resolve to 'SPORTS'.
         """
         with _patch_client("  SPORTS\n"):
-            from src.llm.src.llm.src.llm.classifier import classify_article
+            from src.llm.classifier import classify_article
             result = classify_article("Article about a football match.")
         assert result == "SPORTS"
  
@@ -51,7 +60,7 @@ class TestClassifyArticleValidCategories:
         'technology' and 'Technology' both resolve to 'TECHNOLOGY'.
         """
         with _patch_client("technology"):
-            from src.llm.src.llm.src.llm.classifier import classify_article
+            from src.llm.classifier import classify_article
             result = classify_article("Article about a new smartphone.")
         assert result == "TECHNOLOGY"
  
@@ -61,7 +70,7 @@ class TestClassifyArticleValidCategories:
         'ECONOMY' before validation.
         """
         with _patch_client("eCONOMy"):
-            from src.llm.src.llm.src.llm.classifier import classify_article
+            from src.llm.classifier import classify_article
             result = classify_article("Article about the stock market.")
         assert result == "ECONOMY"
 
@@ -76,7 +85,7 @@ class TestClassifyArticleInvalidResponse:
         function must return FALLBACK_CATEGORY instead of raising an error.
         """
         with _patch_client("UNKNOWN"):
-            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -86,7 +95,7 @@ class TestClassifyArticleInvalidResponse:
         the fallback path.
         """
         with _patch_client(""):
-            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -96,7 +105,7 @@ class TestClassifyArticleInvalidResponse:
         as invalid and produce the fallback category.
         """
         with _patch_client("!!!"):
-            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -106,7 +115,7 @@ class TestClassifyArticleInvalidResponse:
         won't match any single-word category and must fall back.
         """
         with _patch_client("I think SPORTS"):
-            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -116,8 +125,8 @@ class TestClassifyArticleInvalidResponse:
         operators can detect systematic misclassification.
         """
         import logging
-        with _patch_client("INVALID"), caplog.at_level(logging.WARNING, logger="src.llm.src.llm.src.llm.classifier"):
-            from src.llm.src.llm.src.llm.classifier import classify_article
+        with _patch_client("INVALID"), caplog.at_level(logging.WARNING, logger="src.llm.classifier"):
+            from src.llm.classifier import classify_article
             classify_article("Some article.")
         assert any("unrecognized" in record.message.lower() for record in caplog.records)
 
