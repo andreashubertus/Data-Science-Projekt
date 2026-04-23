@@ -9,6 +9,18 @@ headers = {
 }
 
 
+def is_valid_link(url):
+    exclude_list = [
+        "https://www.tagesschau.de",
+        "/wetter/regenradar-deutschland"
+    ]
+    if not url or url in exclude_list:
+        return False
+    if url.startswith("https://www.tagesschau.de/multimedia/podcast/"):
+        return False
+    return True
+
+
 
 
 def scrape_tagesschau_landing_page(request = None):
@@ -25,10 +37,46 @@ def scrape_tagesschau_landing_page(request = None):
         errormessage += "Keine Artikel auf der Tagesschau-Startseite gefunden. Überprüfe die Struktur der Webseite oder die Klasse der Artikel-Links."
         return None,errormessage
 
-    articles_link_list = [article.get('href') for article in articles if article.get('href') and article.get('href') not in ["https://www.tagesschau.de","https://www.tagesschau.de/multimedia/podcast/11km/podcast-11km-3504.html"] and not article.get('href').startswith("https://www.tagesschau.de/multimedia/podcast/")]
+    articles_link_list = [a.get('href') for a in articles if is_valid_link(a.get('href'))]
 
     return articles_link_list
 
+
+def get_article_headline(article_soup, link, errormessage, found_issues):
+    article_headline = article_soup.find(class_ = "article-head__headline--text")
+    if article_headline is None:
+        errormessage += f"Keine Überschrift gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+    else:
+        article_headline = article_headline.get_text(separator= " ",strip=True)
+    return article_headline, errormessage, found_issues
+
+def get_article_text(article_soup, link, errormessage, found_issues):
+    article = article_soup.find_all("p", class_="textabsatz")
+    if article is None or article == []:
+        errormessage += f"Keine Artikeltext gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+    
+    else:
+        article_text = ""
+        for p in article:
+            article_text += f"\n {p.get_text(strip = True)}"
+        if len(article_text) < 50:
+            errormessage += f"Artikeltext zu kurz, überspringe Artikel: {link}.\n"
+            found_issues += 1
+    return article_text, errormessage, found_issues
+
+
+def get_article_date(article_soup, link, errormessage, found_issues):
+    date = article_soup.find(class_ = "metatextline")
+    if date is None:
+        errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+    try:
+        article_date = article_date.get_text(separator= " ",strip=True)
+    except:
+        article_date = "Kein Datum bezüglich des Standes des Artikels gefunden. "
+    return article_date, errormessage, found_issues
 
 def scrape_article(link, article_request = None):
     errormessage = ""
@@ -42,40 +90,22 @@ def scrape_article(link, article_request = None):
     try:
         found_issues = 0
         article_soup = BeautifulSoup(article_request.text, "html.parser")
-        article_headline = article_soup.find(class_ = "article-head__headline--text")
-        if article_headline is None:
-            errormessage += f"Keine Überschrift gefunden, überspringe Artikel: {link}.\n"
-            found_issues += 1
-        else:
-            article_headline = article_headline.get_text(separator= " ",strip=True)
-        article = article_soup.find_all("p", class_="textabsatz")
-        if article is None or article == []:
-            errormessage += f"Keine Artikeltext gefunden, überspringe Artikel: {link}.\n"
-            found_issues += 1
+        
+        article_headline, errormessage, found_issues = get_article_headline(article_soup, link, errormessage, found_issues)
 
-        date = article_soup.find(class_ = "metatextline")
-        if date is None:
-            errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}."
-            found_issues += 1
+        
+        article_text ,errormessage, found_issues = get_article_text(article_soup, link, errormessage, found_issues)
+
+        article_date , errormessage, found_issues = get_article_date(article_soup, link, errormessage, found_issues)
+
         if found_issues > 0:
             errormessage += f"Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}. Falls dies häufig vorkommt, überprüfe die Struktur der Webseite."
-
-
+            return None, errormessage
     except Exception as e:
         errormessage += f"Fehler beim Scrapen des Artikels: {e}, link: {link}"
         return None, errormessage
-    article_text = ""
-    for p in article:
-        article_text += f"\n {p.get_text(strip = True)}"
-    if len(article_text) < 50:
-        errormessage += f"Artikeltext zu kurz, überspringe Artikel: {link}.\n"
-        return None, errormessage
-    try:
-        date = date.get_text(separator= " ",strip=True)
-    except:
-        date = "Kein Datum bezüglich des Standes des Artikels gefunden. "
     
-    return [article_headline, link, date, article_text, datetime.now().strftime("%Y-%m-%d %H:%M:%S")],errormessage
+    return [article_headline, link, article_date, article_text, datetime.now().strftime("%Y-%m-%d %H:%M:%S")],errormessage
 
 def scrape_tagesschau():
     articles = []
