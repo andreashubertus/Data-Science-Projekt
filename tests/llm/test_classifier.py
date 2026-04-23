@@ -11,10 +11,10 @@ def _make_groq_response(text: str) -> MagicMock:
  
  
 def _patch_client(return_text: str):
-    """Context manager that patches ``src.llm.src.llm.classifier.client`` and sets its return value."""
+    """Context manager that patches ``src.llm.src.llm.src.llm.classifier.client`` and sets its return value."""
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value = _make_groq_response(return_text)
-    return patch("src.llm.src.llm.classifier.client", mock_client)
+    return patch("src.llm.src.llm.src.llm.classifier.client", mock_client)
 
 # Tests: valid categories
 
@@ -30,7 +30,7 @@ class TestClassifyArticleValidCategories:
         exact string when the LLM responds with it.
         """
         with _patch_client(category):
-            from src.llm.src.llm.classifier import classify_article
+            from src.llm.src.llm.src.llm.classifier import classify_article
             result = classify_article("Some article text.")
         assert result == category
  
@@ -41,7 +41,7 @@ class TestClassifyArticleValidCategories:
         For example '  SPORTS\\n' should resolve to 'SPORTS'.
         """
         with _patch_client("  SPORTS\n"):
-            from src.llm.src.llm.classifier import classify_article
+            from src.llm.src.llm.src.llm.classifier import classify_article
             result = classify_article("Article about a football match.")
         assert result == "SPORTS"
  
@@ -51,7 +51,7 @@ class TestClassifyArticleValidCategories:
         'technology' and 'Technology' both resolve to 'TECHNOLOGY'.
         """
         with _patch_client("technology"):
-            from src.llm.src.llm.classifier import classify_article
+            from src.llm.src.llm.src.llm.classifier import classify_article
             result = classify_article("Article about a new smartphone.")
         assert result == "TECHNOLOGY"
  
@@ -61,7 +61,7 @@ class TestClassifyArticleValidCategories:
         'ECONOMY' before validation.
         """
         with _patch_client("eCONOMy"):
-            from src.llm.src.llm.classifier import classify_article
+            from src.llm.src.llm.src.llm.classifier import classify_article
             result = classify_article("Article about the stock market.")
         assert result == "ECONOMY"
 
@@ -76,7 +76,7 @@ class TestClassifyArticleInvalidResponse:
         function must return FALLBACK_CATEGORY instead of raising an error.
         """
         with _patch_client("UNKNOWN"):
-            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -86,7 +86,7 @@ class TestClassifyArticleInvalidResponse:
         the fallback path.
         """
         with _patch_client(""):
-            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -96,7 +96,7 @@ class TestClassifyArticleInvalidResponse:
         as invalid and produce the fallback category.
         """
         with _patch_client("!!!"):
-            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -106,7 +106,7 @@ class TestClassifyArticleInvalidResponse:
         won't match any single-word category and must fall back.
         """
         with _patch_client("I think SPORTS"):
-            from src.llm.classifier import classify_article, FALLBACK_CATEGORY
+            from src.llm.src.llm.src.llm.classifier import classify_article, FALLBACK_CATEGORY
             result = classify_article("Some article.")
         assert result == FALLBACK_CATEGORY
  
@@ -116,7 +116,80 @@ class TestClassifyArticleInvalidResponse:
         operators can detect systematic misclassification.
         """
         import logging
-        with _patch_client("INVALID"), caplog.at_level(logging.WARNING, logger="src.llm.classifier"):
-            from src.llm.classifier import classify_article
+        with _patch_client("INVALID"), caplog.at_level(logging.WARNING, logger="src.llm.src.llm.src.llm.classifier"):
+            from src.llm.src.llm.src.llm.classifier import classify_article
             classify_article("Some article.")
         assert any("unrecognized" in record.message.lower() for record in caplog.records)
+
+# Tests: input validation
+
+class TestClassifyArticleInputValidation:
+    """Tests that verify early rejection of bad inputs."""
+ 
+    def test_empty_string_raises_value_error(self):
+        """
+        An empty article string must raise a ValueError before any API call
+        is made — sending blank text to the LLM would waste tokens and yield
+        a meaningless result.
+        """
+        with patch("src.llm.src.llm.classifier.client") as mock_client:
+            from src.llm.src.llm.classifier import classify_article
+            with pytest.raises(ValueError, match="empty"):
+                classify_article("")
+            mock_client.chat.completions.create.assert_not_called()
+ 
+    def test_whitespace_only_raises_value_error(self):
+        """
+        A string containing only whitespace (spaces, tabs, newlines) is
+        semantically empty and must also raise a ValueError.
+        """
+        with patch("src.llm.src.llm.classifier.client") as mock_client:
+            from src.llm.src.llm.classifier import classify_article
+            with pytest.raises(ValueError):
+                classify_article("   \n\t  ")
+            mock_client.chat.completions.create.assert_not_called()
+
+# Tests: API interaction
+
+class TestClassifyArticleApiInteraction:
+    """Tests that verify how the function interacts with the Groq API."""
+ 
+    def test_article_text_is_sent_as_user_message(self):
+        """
+        The raw article text must appear in the 'user' role message that is
+        sent to the API, so the LLM can read it.
+        """
+        with patch("src.llm.classifier.client") as mock_client:
+            mock_client.chat.completions.create.return_value = _make_groq_response("SPORTS")
+            from src.llm.classifier import classify_article
+            classify_article("Breaking news about the Olympics.")
+ 
+        messages = mock_client.chat.completions.create.call_args.kwargs["messages"]
+        user_message = next(m for m in messages if m["role"] == "user")
+        assert "Breaking news about the Olympics." in user_message["content"]
+ 
+    def test_system_prompt_is_included(self):
+        """
+        A system-role message must be present in every API call so the LLM
+        knows it should classify the article.
+        """
+        with patch("src.llm.classifier.client") as mock_client:
+            mock_client.chat.completions.create.return_value = _make_groq_response("CULTURE")
+            from src.llm.classifier import classify_article
+            classify_article("Article about a new art exhibition.")
+ 
+        messages = mock_client.chat.completions.create.call_args.kwargs["messages"]
+        roles = [m["role"] for m in messages]
+        assert "system" in roles
+ 
+    def test_api_called_exactly_once(self):
+        """
+        Classifying a single article must result in exactly one API call —
+        no retries or double-calls should occur under normal conditions.
+        """
+        with patch("src.llm.classifier.client") as mock_client:
+            mock_client.chat.completions.create.return_value = _make_groq_response("POLITICS")
+            from src.llm.classifier import classify_article
+            classify_article("An article about the election.")
+ 
+        mock_client.chat.completions.create.assert_called_once()
