@@ -33,7 +33,19 @@ if not api_key:
 client = Groq(api_key=api_key)
 
 def _generate_completion(system_prompt: str, user_content: str, max_tokens: int) -> str:
-    """Send a prompt pair to the LLM and return the trimmed text response."""
+    """Generate a completion from the LLM for a system and user prompt pair.
+
+    Args:
+        system_prompt: Instruction text that defines the model's task.
+        user_content: Input text passed to the model as the user message.
+        max_tokens: Maximum number of tokens the model may generate.
+
+    Returns:
+        Trimmed text content from the first model response choice.
+
+    Raises:
+        groq.APIError: On connection, authentication, or API request errors.
+    """
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
@@ -47,16 +59,17 @@ def _generate_completion(system_prompt: str, user_content: str, max_tokens: int)
 
 def summarize_chunk(articles: list[str]) -> str:
     """Summarizes a list of article texts into a short intermediate summary.
- 
+
     The articles are joined with a separator and sent together to the LLM.
     The result is used as input for :func:`summarize_digest`.
- 
+
     Args:
         articles: List of raw article text strings.
- 
+
     Returns:
-        Summary of the chunk as a single string.
- 
+        Summary of the chunk as a single string. Returns an empty string if
+        ``articles`` is empty.
+
     Raises:
         groq.APIError: On connection or authentication errors.
     """
@@ -75,7 +88,8 @@ def summarize_digest(chunk_summaries: list[str]) -> str:
             :func:`summarize_chunk`.
  
     Returns:
-        Final digest text as a single string.
+        Final digest text as a single string. Returns an empty string if
+        ``chunk_summaries`` is empty.
  
     Raises:
         groq.APIError: On connection or authentication errors.
