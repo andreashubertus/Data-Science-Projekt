@@ -32,6 +32,18 @@ if not api_key:
 
 client = Groq(api_key=api_key)
 
+def _generate_completion(system_prompt: str, user_content: str, max_tokens: int) -> str:
+    """Send a prompt pair to the LLM and return the trimmed text response."""
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ],
+        max_tokens=max_tokens,
+    )
+    return response.choices[0].message.content.strip()
+
 
 def summarize_chunk(articles: list[str]) -> str:
     """Summarizes a list of article texts into a short intermediate summary.
@@ -52,15 +64,8 @@ def summarize_chunk(articles: list[str]) -> str:
         return ""
     
     combined = "\n\n---\n\n".join(articles)
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": CHUNK_PROMPT},
-            {"role": "user", "content": combined}
-        ],
-        max_tokens=MAX_TOKENS_CHUNK
-    )
-    return response.choices[0].message.content.strip()
+    return _generate_completion(CHUNK_PROMPT, combined, MAX_TOKENS_CHUNK)
+
 
 def summarize_digest(chunk_summaries: list[str]) -> str:
     """Condenses multiple chunk summaries into a single overall digest.
@@ -77,17 +82,9 @@ def summarize_digest(chunk_summaries: list[str]) -> str:
     """
     if not chunk_summaries:
         return ""
-    
+
     combined = "\n\n".join(chunk_summaries)
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": DIGEST_PROMPT},
-            {"role": "user", "content": combined}
-        ],
-        max_tokens=MAX_TOKENS_DIGEST
-    )
-    return response.choices[0].message.content.strip()
+    return _generate_completion(DIGEST_PROMPT, combined, MAX_TOKENS_DIGEST)
 
 def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
     """Builds and persists the digest for a news category.
