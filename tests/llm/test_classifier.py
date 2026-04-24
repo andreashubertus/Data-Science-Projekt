@@ -25,6 +25,7 @@ def _patch_client(return_text: str):
     mock_client.chat.completions.create.return_value = _make_groq_response(return_text)
     return patch("src.llm.classifier.client", mock_client)
 
+
 # Tests: valid categories
 
 class TestClassifyArticleValidCategories:
@@ -73,6 +74,7 @@ class TestClassifyArticleValidCategories:
             from src.llm.classifier import classify_article
             result = classify_article("Article about the stock market.")
         assert result == "ECONOMY"
+
 
 # Tests: invalid / unexpected LLM responses
 
@@ -130,6 +132,7 @@ class TestClassifyArticleInvalidResponse:
             classify_article("Some article.")
         assert any("unrecognized" in record.message.lower() for record in caplog.records)
 
+
 # Tests: input validation
 
 class TestClassifyArticleInputValidation:
@@ -141,8 +144,8 @@ class TestClassifyArticleInputValidation:
         is made — sending blank text to the LLM would waste tokens and yield
         a meaningless result.
         """
-        with patch("src.llm.src.llm.classifier.client") as mock_client:
-            from src.llm.src.llm.classifier import classify_article
+        with patch("src.llm.classifier.client") as mock_client:
+            from src.llm.classifier import classify_article
             with pytest.raises(ValueError, match="empty"):
                 classify_article("")
             mock_client.chat.completions.create.assert_not_called()
@@ -152,11 +155,12 @@ class TestClassifyArticleInputValidation:
         A string containing only whitespace (spaces, tabs, newlines) is
         semantically empty and must also raise a ValueError.
         """
-        with patch("src.llm.src.llm.classifier.client") as mock_client:
-            from src.llm.src.llm.classifier import classify_article
+        with patch("src.llm.classifier.client") as mock_client:
+            from src.llm.classifier import classify_article
             with pytest.raises(ValueError):
                 classify_article("   \n\t  ")
             mock_client.chat.completions.create.assert_not_called()
+
 
 # Tests: API interaction
 

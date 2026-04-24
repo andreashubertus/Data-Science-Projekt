@@ -32,6 +32,7 @@ def _make_db(
     db.save_digest.return_value = None
     return db
 
+
 # Tests: summarize_chunk
 
 class TestSummarizeChunk:
@@ -78,6 +79,7 @@ class TestSummarizeChunk:
             from src.llm.summarizer import summarize_chunk
             result = summarize_chunk(["Just one article"])
         assert result == "Single article summary"
+
 
 # Tests: summarize_digest
 
@@ -194,6 +196,7 @@ class TestBuildCategoryDigest:
             db = _make_db(articles=[])
             result = build_category_digest(db, category)
             assert isinstance(result, str)
+
 
 # Tests: build_all_digests
 
