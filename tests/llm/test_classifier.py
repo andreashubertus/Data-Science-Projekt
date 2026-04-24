@@ -7,6 +7,8 @@ All tests are unit tests: the Groq API client is replaced with
 Run with:
     pytest tests/test_classifier.py -v
 """
+import sys
+
 import pytest
 from unittest.mock import MagicMock, patch
  
@@ -25,6 +27,11 @@ def _patch_client(return_text: str):
     mock_client.chat.completions.create.return_value = _make_groq_response(return_text)
     return patch("src.llm.classifier.client", mock_client)
 
+@pytest.fixture(autouse=True)
+def _set_test_api_key(monkeypatch):
+    """Provide a dummy API key so the classifier module can be imported in tests."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    sys.modules.pop("src.llm.classifier", None)
 
 # Tests: valid categories
 
