@@ -15,17 +15,21 @@ logger = logging.getLogger(__name__)
  
 MODEL = "llama-3.3-70b-versatile"
 MAX_TOKENS = 10
-FALLBACK_CATEGORY = "UNCATEGORIZED"
  
 VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
+FALLBACK_CATEGORY = "UNCATEGORIZED"
  
 CLASSIFY_PROMPT = (Path(__file__).parent / "prompts" / "classify.txt").read_text(encoding="utf-8")
  
 load_dotenv()
- 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
- 
- 
+
+api_key = os.environ.get("GROQ_API_KEY")
+if not api_key:
+    raise RuntimeError("GROQ_API_KEY is not set.")
+
+client = Groq(api_key=api_key)
+
+
 def classify_article(article: str) -> str:
     """Classifies a news article into one of the predefined categories.
  

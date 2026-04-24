@@ -26,7 +26,12 @@ DIGEST_PROMPT = (Path(__file__).parent / "prompts" / "summarize_digest.txt").rea
 
 load_dotenv()
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+api_key = os.environ.get("GROQ_API_KEY")
+if not api_key:
+    raise RuntimeError("GROQ_API_KEY is not set.")
+
+client = Groq(api_key=api_key)
+
 
 def summarize_chunk(articles: list[str]) -> str:
     """Summarizes a list of article texts into a short intermediate summary.
@@ -55,9 +60,9 @@ def summarize_chunk(articles: list[str]) -> str:
         ],
         max_tokens=MAX_TOKENS_CHUNK
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content.strip()
 
-def summarize_digest(chunk_summaries: list[str])-> str:
+def summarize_digest(chunk_summaries: list[str]) -> str:
     """Condenses multiple chunk summaries into a single overall digest.
  
     Args:
@@ -82,7 +87,7 @@ def summarize_digest(chunk_summaries: list[str])-> str:
         ],
         max_tokens=MAX_TOKENS_DIGEST
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content.strip()
 
 def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
     """Builds and persists the digest for a news category.
@@ -104,11 +109,15 @@ def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
     Raises:
         ValueError: When ``category`` is not in :data:`VALID_CATEGORIES`.
     """
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than 0.")
+    category = category.upper()
+
     if category not in VALID_CATEGORIES:
         raise ValueError(f"Invalid category '{category}'. Must be one of {VALID_CATEGORIES}")
  
     articles = db_module.get_articles_by_category(category)
-    texts = [a["text"] for a in articles if a["text"]]
+    texts = [a.get("text") for a in articles if a.get("text")]
  
     if not texts:
         return f"No articles available for category {category}."
@@ -116,7 +125,7 @@ def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
     chunks = [texts[i:i + chunk_size] for i in range(0, len(texts), chunk_size)]
  
     chunk_summaries = []
-    for i, chunk in enumerate(chunks):
+    for chunk in chunks:
         chunk_summaries.append(summarize_chunk(chunk))
  
     digest = summarize_digest(chunk_summaries)
@@ -136,7 +145,7 @@ def build_all_digests(db_module, chunk_size: int = 5) -> dict[str, str]:
         Dictionary mapping category names to their digest texts.
     """
     digests = {}
-    for category in VALID_CATEGORIES:
+    for category in sorted(VALID_CATEGORIES):
         digests[category] = build_category_digest(db_module, category, chunk_size)
     return digests
 
@@ -162,6 +171,7 @@ def build_newsletter_for_subscriber(db_module, email: str) -> str:
  
     sections = []
     for category in categories:
+        category = category.upper()
         digest = db_module.get_latest_digest(category)
         if digest:
             sections.append(f"## {category.capitalize()}\n\n{digest}")
@@ -170,11 +180,3 @@ def build_newsletter_for_subscriber(db_module, email: str) -> str:
         return "No digests available yet for your subscribed categories."
  
     return "\n\n---\n\n".join(sections)
-
-
-if __name__ == "__main__":
-    import sys
-    sys.path.append(str(Path(__file__).parent.parent))
-    import db
-
-    db.init_db()
