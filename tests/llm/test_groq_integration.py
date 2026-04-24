@@ -15,7 +15,7 @@ def _require_groq_api_key() -> None:
         pytest.skip("GROQ_API_KEY not set; skipping Groq integration test.")
 
 
-def test_classifier_with_real_groq_returns_known_category() -> None:
+def test_classifier_returns_category() -> None:
     """Classifier should return a valid category or the defined fallback value."""
     _require_groq_api_key()
 
@@ -33,3 +33,36 @@ def test_classifier_with_real_groq_returns_known_category() -> None:
     result = classify_article(article)
 
     assert result in VALID_CATEGORIES | {FALLBACK_CATEGORY}
+
+def test_summarize_chunk_returns_non_empty_text() -> None:
+    """Chunk summarization should produce a non-empty string for normal input."""
+    _require_groq_api_key()
+
+    from src.llm.summarizer import summarize_chunk
+
+    articles = [
+        "Team A defeated Team B 2 to 1 after a late goal in the final minutes.",
+        "The coach praised the disciplined defense and strong second-half performance.",
+    ]
+
+    result = summarize_chunk(articles)
+
+    assert isinstance(result, str)
+    assert result.strip() != ""
+
+
+def test_summarize_digest_returns_non_empty_text() -> None:
+    """Digest summarization should combine partial summaries into readable output."""
+    _require_groq_api_key()
+
+    from src.llm.summarizer import summarize_digest
+
+    chunk_summaries = [
+        "Sports: Team A won an important match and improved its league position.",
+        "Sports: The coach highlighted defensive stability and team spirit.",
+    ]
+
+    result = summarize_digest(chunk_summaries)
+
+    assert isinstance(result, str)
+    assert result.strip() != ""
