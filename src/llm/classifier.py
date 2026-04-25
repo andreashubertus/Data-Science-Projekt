@@ -5,7 +5,6 @@ The LLM is expected to respond with a single uppercase category word.
 If the response is not a valid category, the article is assigned a fallback.
 """
 
-import logging
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -13,17 +12,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from groq import Groq
 
-logger = logging.getLogger(__name__)
-
 load_dotenv()
 
-MODEL: str = "llama-3.3-70b-versatile"
-MAX_TOKENS: int = 10
+MODEL = "llama-3.3-70b-versatile"
+MAX_TOKENS = 10
 
-VALID_CATEGORIES: frozenset[str] = frozenset(
-    {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
-)
-FALLBACK_CATEGORY: str = "UNCATEGORIZED"
+VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
+
+FALLBACK_CATEGORY = "UNCATEGORIZED"
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 
@@ -103,7 +99,7 @@ def classify_article(article: str) -> str:
 
     Sends the article to the LLM with a classification prompt and parses
     the response. If the model returns an unrecognized category, a fallback
-    value is returned and a warning is logged.
+    value is returned and a warning is printed.
 
     Args:
         article: Raw text of the news article to classify.
@@ -123,7 +119,7 @@ def classify_article(article: str) -> str:
     client = _get_client()
     classify_prompt = _get_classify_prompt()
 
-    logger.debug("Sending article to LLM for classification (length=%d).", len(article))
+    print(f"Sending article to LLM for classification (length={len(article)}).")
 
     response = client.chat.completions.create(
         model=MODEL,
@@ -137,12 +133,11 @@ def classify_article(article: str) -> str:
     category = _extract_category(response)
 
     if category not in VALID_CATEGORIES:
-        logger.warning(
-            "LLM returned unrecognized category %r; falling back to %r.",
-            category,
-            FALLBACK_CATEGORY,
+        print(
+            f"LLM returned unrecognized category {category!r}; "
+            f"falling back to {FALLBACK_CATEGORY!r}."
         )
         return FALLBACK_CATEGORY
 
-    logger.debug("Article classified as %r.", category)
+    print(f"Article classified as {category!r}.")
     return category

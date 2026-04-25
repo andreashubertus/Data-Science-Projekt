@@ -114,16 +114,14 @@ class TestClassifyArticleInvalidResponse:
 
         assert result == FALLBACK_CATEGORY
 
-    def test_invalid_response_logs_warning(self, caplog):
-        """Fallbacks should emit a warning to support debugging."""
-        import logging
-
-        with _patch_client("INVALID"), caplog.at_level(logging.WARNING, logger="src.llm.classifier"):
+    def test_invalid_response_prints_warning(self, capsys):
+        """Fallbacks should print a warning to support debugging."""
+        with _patch_client("INVALID"):
             from src.llm.classifier import classify_article
 
             classify_article("Some article.")
 
-        assert any("unrecognized" in record.message.lower() for record in caplog.records)
+        assert "unrecognized" in capsys.readouterr().out.lower()
 
 
 class TestClassifyArticleInputValidation:
