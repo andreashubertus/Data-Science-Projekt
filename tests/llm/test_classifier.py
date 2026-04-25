@@ -1,11 +1,11 @@
 """
-Full test suite for the ``classifier`` module.
+Unit tests for the ``classifier`` module.
 
-All tests are unit tests: the Groq API client is replaced with
-``unittest.mock`` stubs so no real network calls are made.
+The Groq API client is replaced with ``unittest.mock`` stubs, so no real
+network calls are made.
 
 Run with:
-    pytest tests/test_classifier.py -v
+    pytest tests/llm/test_classifier.py -v
 """
 
 import sys
@@ -15,17 +15,17 @@ import pytest
 
 
 def _make_groq_response(text) -> MagicMock:
-    """Returns a minimal mock that mimics the Groq chat completion response."""
+    """Return a minimal mock that mimics a Groq chat completion response."""
     response = MagicMock()
     response.choices[0].message.content = text
     return response
 
 
-def _patch_client(return_text):
-    """Patch ``src.llm.classifier._get_client`` and set its return value."""
+def _make_client(return_text) -> MagicMock:
+    """Return a mocked Groq client that yields ``return_text``."""
     mock_client = MagicMock()
     mock_client.chat.completions.create.return_value = _make_groq_response(return_text)
-    return patch("src.llm.classifier._get_client", return_value=mock_client)
+    return mock_client
 
 
 @pytest.fixture(autouse=True)
@@ -34,210 +34,131 @@ def _reset_classifier_module():
     sys.modules.pop("src.llm.classifier", None)
 
 
-class TestClassifyArticleValidCategories:
-    """Tests that verify correct behaviour when the LLM returns a valid category."""
-
-    @pytest.mark.parametrize("category", ["POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"])
-    def test_returns_valid_category(self, category: str):
-        """Each valid category should be returned unchanged."""
-        with _patch_client(category):
-            from src.llm.classifier import classify_article
-
-            result = classify_article("Some article text.")
-
-        assert result == category
-
-    def test_strips_whitespace_from_response(self):
-        """Leading and trailing whitespace should be ignored."""
-        with _patch_client("  SPORTS\n"):
-            from src.llm.classifier import classify_article
-
-            result = classify_article("Article about a football match.")
-
-        assert result == "SPORTS"
-
-    def test_lowercased_response_is_uppercased(self):
-        """Lowercase model output should be normalized."""
-        with _patch_client("technology"):
-            from src.llm.classifier import classify_article
-
-            result = classify_article("Article about a new smartphone.")
-
-        assert result == "TECHNOLOGY"
-
-    def test_mixed_case_response_is_uppercased(self):
-        """Mixed-case model output should be normalized."""
-        with _patch_client("eCONOMy"):
-            from src.llm.classifier import classify_article
-
-            result = classify_article("Article about the stock market.")
-
-        assert result == "ECONOMY"
-
-
-class TestClassifyArticleInvalidResponse:
-    """Tests that verify the fallback behaviour for unrecognized LLM output."""
-
-    def test_unknown_category_returns_fallback(self):
-        """An unknown category should trigger the fallback value."""
-        with _patch_client("UNKNOWN"):
-            from src.llm.classifier import FALLBACK_CATEGORY, classify_article
-
-            result = classify_article("Some article.")
-
-        assert result == FALLBACK_CATEGORY
-
-    def test_empty_llm_response_returns_fallback(self):
-        """An empty string is still a handled invalid category."""
-        with _patch_client(""):
-            from src.llm.classifier import FALLBACK_CATEGORY, classify_article
-
-            result = classify_article("Some article.")
-
-        assert result == FALLBACK_CATEGORY
-
-    def test_garbage_response_returns_fallback(self):
-        """Garbage text should trigger the fallback value."""
-        with _patch_client("!!!"):
-            from src.llm.classifier import FALLBACK_CATEGORY, classify_article
-
-            result = classify_article("Some article.")
-
-        assert result == FALLBACK_CATEGORY
-
-    def test_multiword_response_returns_fallback(self):
-        """Multi-word output should trigger the fallback value."""
-        with _patch_client("I think SPORTS"):
-            from src.llm.classifier import FALLBACK_CATEGORY, classify_article
-
-            result = classify_article("Some article.")
-
-        assert result == FALLBACK_CATEGORY
-
-    def test_invalid_response_prints_warning(self, capsys):
-        """Fallbacks should print a warning to support debugging."""
-        with _patch_client("INVALID"):
-            from src.llm.classifier import classify_article
-
-            classify_article("Some article.")
-
-        assert "unrecognized" in capsys.readouterr().out.lower()
-
-
-class TestClassifyArticleInputValidation:
-    """Tests that verify early rejection of bad inputs."""
-
-    def test_empty_string_raises_value_error(self):
-        """An empty article should fail before any client lookup."""
-        with patch("src.llm.classifier._get_client") as mock_get_client:
-            from src.llm.classifier import classify_article
-
-            with pytest.raises(ValueError, match="empty"):
-                classify_article("")
-
-        mock_get_client.assert_not_called()
-
-    def test_whitespace_only_raises_value_error(self):
-        """Blank article content should fail before any client lookup."""
-        with patch("src.llm.classifier._get_client") as mock_get_client:
-            from src.llm.classifier import classify_article
-
-            with pytest.raises(ValueError):
-                classify_article("   \n\t  ")
-
-        mock_get_client.assert_not_called()
-
-    def test_import_works_without_api_key(self, monkeypatch):
-        """The module should remain importable when the key is missing."""
-        monkeypatch.setenv("GROQ_API_KEY", "")
-        sys.modules.pop("src.llm.classifier", None)
-
-        from src.llm import classifier
-
-        assert classifier.classify_article is not None
-
-    def test_missing_api_key_raises_runtime_error_on_call(self, monkeypatch):
-        """A missing key should fail when the API is actually needed."""
-        monkeypatch.setenv("GROQ_API_KEY", "")
-        sys.modules.pop("src.llm.classifier", None)
-
+@pytest.mark.parametrize("category", ["POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"])
+def test_returns_valid_category(category: str):
+    """Each valid category should be returned unchanged."""
+    with patch("src.llm.classifier._get_client", return_value=_make_client(category)):
         from src.llm.classifier import classify_article
 
-        with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
+        result = classify_article("Some article text.")
+
+    assert result == category
+
+
+def test_normalizes_llm_response():
+    """Whitespace and casing from the model response should be normalized."""
+    with patch("src.llm.classifier._get_client", return_value=_make_client("  technology\n")):
+        from src.llm.classifier import classify_article
+
+        result = classify_article("Article about a new smartphone.")
+
+    assert result == "TECHNOLOGY"
+
+
+@pytest.mark.parametrize("response_text", ["UNKNOWN", "", "!!!", "I think SPORTS"])
+def test_invalid_category_returns_fallback(response_text: str):
+    """Unrecognized model output should trigger the fallback value."""
+    with patch("src.llm.classifier._get_client", return_value=_make_client(response_text)):
+        from src.llm.classifier import FALLBACK_CATEGORY, classify_article
+
+        result = classify_article("Some article.")
+
+    assert result == FALLBACK_CATEGORY
+
+
+def test_invalid_category_prints_warning(capsys):
+    """Fallbacks should print a warning to support debugging."""
+    with patch("src.llm.classifier._get_client", return_value=_make_client("INVALID")):
+        from src.llm.classifier import classify_article
+
+        classify_article("Some article.")
+
+    assert "unrecognized" in capsys.readouterr().out.lower()
+
+
+@pytest.mark.parametrize("article", ["", "   \n\t  "])
+def test_blank_article_raises_value_error(article: str):
+    """Blank article content should fail before any client lookup."""
+    with patch("src.llm.classifier._get_client") as mock_get_client:
+        from src.llm.classifier import classify_article
+
+        with pytest.raises(ValueError, match="empty"):
+            classify_article(article)
+
+    mock_get_client.assert_not_called()
+
+
+def test_missing_api_key_raises_runtime_error_on_call(monkeypatch):
+    """A missing key should fail when the API is actually needed."""
+    monkeypatch.setenv("GROQ_API_KEY", "")
+    sys.modules.pop("src.llm.classifier", None)
+
+    from src.llm.classifier import classify_article
+
+    with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
+        classify_article("Some article.")
+
+
+def test_get_client_creates_new_client_each_call(monkeypatch):
+    """The Groq client should not be cached, matching the summarizer module."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+    from src.llm.classifier import _get_client
+
+    client_a = MagicMock()
+    client_b = MagicMock()
+    with patch("src.llm.classifier.Groq", side_effect=[client_a, client_b]) as mock_groq:
+        assert _get_client() is client_a
+        assert _get_client() is client_b
+
+    assert mock_groq.call_count == 2
+
+
+def test_invalid_response_structure_raises_runtime_error():
+    """A response without choices should raise a clear RuntimeError."""
+    response = MagicMock()
+    response.choices = []
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = response
+
+    with patch("src.llm.classifier._get_client", return_value=mock_client):
+        from src.llm.classifier import classify_article
+
+        with pytest.raises(RuntimeError, match="invalid response structure"):
             classify_article("Some article.")
 
 
-class TestClassifyArticleApiErrors:
-    """Tests that verify behaviour for malformed API responses."""
+def test_none_content_raises_runtime_error():
+    """A response with ``None`` content should raise a clear RuntimeError."""
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = _make_groq_response(None)
 
-    def test_missing_choices_raises_runtime_error(self):
-        """A response without choices should raise a clear RuntimeError."""
-        response = MagicMock()
-        response.choices = []
+    with patch("src.llm.classifier._get_client", return_value=mock_client):
+        from src.llm.classifier import classify_article
 
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = response
-
-        with patch("src.llm.classifier._get_client", return_value=mock_client):
-            from src.llm.classifier import classify_article
-
-            with pytest.raises(RuntimeError, match="invalid response structure"):
-                classify_article("Some article.")
-
-    def test_none_content_raises_runtime_error(self):
-        """A response with ``None`` content should raise a clear RuntimeError."""
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _make_groq_response(None)
-
-        with patch("src.llm.classifier._get_client", return_value=mock_client):
-            from src.llm.classifier import classify_article
-
-            with pytest.raises(RuntimeError, match="empty response"):
-                classify_article("Some article.")
+        with pytest.raises(RuntimeError, match="empty response"):
+            classify_article("Some article.")
 
 
-class TestClassifyArticleApiInteraction:
-    """Tests that verify how the function interacts with the Groq API."""
+def test_sends_prompt_and_article_to_api():
+    """The API call should include both the system prompt and raw article text."""
+    mock_client = _make_client("SPORTS")
 
-    def test_article_text_is_sent_as_user_message(self):
-        """The raw article text must be sent as the user message."""
-        with patch("src.llm.classifier._get_client") as mock_get_client:
-            mock_client = MagicMock()
-            mock_client.chat.completions.create.return_value = _make_groq_response("SPORTS")
-            mock_get_client.return_value = mock_client
+    with patch("src.llm.classifier._get_client", return_value=mock_client):
+        from src.llm.classifier import MODEL, MAX_TOKENS, classify_article
 
-            from src.llm.classifier import classify_article
+        classify_article("Breaking news about the Olympics.")
 
-            classify_article("Breaking news about the Olympics.")
+    mock_client.chat.completions.create.assert_called_once()
+    call_kwargs = mock_client.chat.completions.create.call_args.kwargs
 
-        messages = mock_client.chat.completions.create.call_args.kwargs["messages"]
-        user_message = next(m for m in messages if m["role"] == "user")
-        assert "Breaking news about the Olympics." in user_message["content"]
+    assert call_kwargs["model"] == MODEL
+    assert call_kwargs["max_tokens"] == MAX_TOKENS
 
-    def test_system_prompt_is_included(self):
-        """A system-role message must be present in every API call."""
-        with patch("src.llm.classifier._get_client") as mock_get_client:
-            mock_client = MagicMock()
-            mock_client.chat.completions.create.return_value = _make_groq_response("CULTURE")
-            mock_get_client.return_value = mock_client
-
-            from src.llm.classifier import classify_article
-
-            classify_article("Article about a new art exhibition.")
-
-        messages = mock_client.chat.completions.create.call_args.kwargs["messages"]
-        roles = [m["role"] for m in messages]
-        assert "system" in roles
-
-    def test_api_called_exactly_once(self):
-        """Classifying a single article should perform exactly one API call."""
-        with patch("src.llm.classifier._get_client") as mock_get_client:
-            mock_client = MagicMock()
-            mock_client.chat.completions.create.return_value = _make_groq_response("POLITICS")
-            mock_get_client.return_value = mock_client
-
-            from src.llm.classifier import classify_article
-
-            classify_article("An article about the election.")
-
-        mock_client.chat.completions.create.assert_called_once()
+    messages = call_kwargs["messages"]
+    assert any(message["role"] == "system" and message["content"] for message in messages)
+    assert any(
+        message["role"] == "user" and "Breaking news about the Olympics." in message["content"]
+        for message in messages
+    )

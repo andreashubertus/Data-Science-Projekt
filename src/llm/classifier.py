@@ -52,9 +52,8 @@ def _get_classify_prompt() -> str:
     return _load_prompt("classify.txt")
 
 
-@lru_cache(maxsize=1)
 def _get_client() -> Groq:
-    """Create and cache the Groq client (lazy, so the module stays importable in tests).
+    """Create the Groq client lazily so the module remains importable in tests.
 
     Returns:
         Authenticated :class:`groq.Groq` client instance.

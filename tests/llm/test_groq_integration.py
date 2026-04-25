@@ -3,6 +3,9 @@
 These tests complement the mock-based unit tests by checking that the
 classifier and summarizer work end-to-end with actual API calls. They only
 assert stable properties of the responses, because exact LLM output can vary.
+
+Run with:
+    pytest tests/llm/test_groq_integration.py -v
 """
 
 import os
