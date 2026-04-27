@@ -4,7 +4,9 @@
 
 # Python
 __pycache__/
+.pytest_cache/
 *.pyc
 .venv/
 venv/
 .vscode/settings.json
+.env
