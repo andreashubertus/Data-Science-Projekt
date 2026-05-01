@@ -69,7 +69,7 @@ def get_article_date(article_soup, link, errormessage, found_issues):
     if date_element is None or not date_element.has_attr('datetime'):
         errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}.\n"
         found_issues += 1
-        return "Kein Datum gefunden.\n", errormessage, found_issues
+        return "Kein Datum gefunden.", errormessage, found_issues
 
     article_date = date_element.get_text(strip=True)
     return article_date, errormessage, found_issues
@@ -80,11 +80,14 @@ def scrape_article(link , article_request = None):
 
     if not link.startswith("http"):
         link = "https://theconversation.com" + link
+    if "theconversation.com" not in link:
+        error_message += f"Ungültiger URL, überspringe Artikel: {link}.\n"
+        return None, error_message
     if article_request is None:
         article_request = requests.get(link, headers=headers)
-        if article_request.status_code != 200:
-            print(f"Keine Antwort. Status Code: {article_request.status_code}")
-      
+    if article_request.status_code != 200:
+        error_message += f"Keine Antwort. Status Code: {article_request.status_code}"
+        return None, error_message
     try:
         found_issues = 0
         article_soup = BeautifulSoup(article_request.text, "html.parser")
@@ -96,10 +99,10 @@ def scrape_article(link , article_request = None):
         
         if found_issues > 0:
             print(f"{error_message}Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}.\nFalls dies häufig vorkommt, überprüfe die Struktur der Webseite.\n")
-            return None
+            return None,error_message
         
     except Exception as e:
-        errormessage += f"Fehler beim Scrapen des Artikels: {e}, link: {link}"
+        error_message += f"Fehler beim Scrapen des Artikels: {e}, link: {link}"
         return None,error_message
 
     return [
@@ -108,7 +111,7 @@ def scrape_article(link , article_request = None):
         article_date, 
         article_text.strip(), 
         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ]
+    ], error_message
         
     
 
