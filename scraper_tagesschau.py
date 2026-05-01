@@ -85,6 +85,9 @@ def scrape_article(link, article_request = None):
     errormessage = ""
     if not link.startswith("http"):
         link = "https://www.tagesschau.de" + link
+    if "https://www.tagesschau.de" not in link:
+        errormessage += f"Ungültiger URL, überspringe Artikel: {link}.\n"
+        return None, errormessage
     if article_request is None:
         article_request = requests.get(link, headers=headers)     
     if article_request.status_code != 200:
