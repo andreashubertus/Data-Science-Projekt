@@ -87,9 +87,9 @@ def scrape_article(link, article_request = None):
         link = "https://www.tagesschau.de" + link
     if article_request is None:
         article_request = requests.get(link, headers=headers)     
-        if article_request.status_code != 200:
-            errormessage += f"Keine Antwort von der Artikel-Website. Status Code: {article_request.status_code}\n"
-            return None, errormessage
+    if article_request.status_code != 200:
+        errormessage += f"Keine Antwort von der Artikel-Website. Status Code: {article_request.status_code}\n"
+        return None, errormessage
     try:
         found_issues = 0
         article_soup = BeautifulSoup(article_request.text, "html.parser")
