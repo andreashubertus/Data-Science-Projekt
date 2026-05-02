@@ -1,5 +1,5 @@
-from mailing.mailer_service import send_email
-from mailing.models import Subscriber, EmailMessage
+from src.mailing.mailer_service import send_email
+from src.mailing.models import Subscriber, EmailMessage
 
 
 def test_send_email_success():

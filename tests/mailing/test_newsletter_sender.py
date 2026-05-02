@@ -1,7 +1,7 @@
 import pytest
 
-from mailing.newsletter_sender import send_latest_newsletter
-from mailing.mappers import MailingDataError
+from src.mailing.newsletter_sender import send_latest_newsletter
+from src.mailing.mappers import MailingDataError
 
 class DBConnectionMock:
     def __init__(self):

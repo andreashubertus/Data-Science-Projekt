@@ -1,6 +1,6 @@
 import pytest
 
-from mailing.mappers import MailingDataError, to_subscriber, to_summary
+from src.mailing.mappers import MailingDataError, to_subscriber, to_summary
 
 
 def test_to_subscriber_full():

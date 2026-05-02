@@ -1,8 +1,8 @@
 import pytest
 
-from mailing.content_builder import build_email
-from mailing.models import Summary
-from mailing.mappers import MailingDataError
+from src.mailing.content_builder import build_email
+from src.mailing.models import Summary
+from src.mailing.mappers import MailingDataError
 
 
 def test_build_email_includes_title_and_content():
