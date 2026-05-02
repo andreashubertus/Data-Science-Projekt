@@ -118,16 +118,19 @@ def scrape_article(link , article_request = None):
 
 def scrape_theconversation():
     articles = []
+    all_errors = ""
     articles_link, error_message = get_links_from_theconversation_rss()
-    articles_link = articles_link
+    all_errors += f"{error_message}\n"
     if articles_link is None:
         print(error_message)
-        return []
+        return [],error_message
     else:
         for link in articles_link:
-            articles.append(scrape_article(link))
+            article,error_message = scrape_article(link)
+            articles.append(article)
+            all_errors += error_message
             #time.sleep(2)
-    return articles, error_message
+    return articles, all_errors
 
 
 if __name__ == "__main__":

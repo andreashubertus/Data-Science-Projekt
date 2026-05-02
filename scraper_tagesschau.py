@@ -12,11 +12,13 @@ headers = {
 def is_valid_link(url):
     exclude_list = [
         "https://www.tagesschau.de",
-        "/wetter/regenradar-deutschland"
+        "/wetter/regenradar-deutschland",
     ]
     if not url or url in exclude_list:
         return False
-    if url.startswith("https://www.tagesschau.de/multimedia/podcast/"):
+    if url.startswith("https://www.tagesschau.de/multimedia/podcast/") or url.startswith("https://www.sportschau.de"):
+        return False
+    if not url.startswith("https://www.tagesschau.de") and not url.startswith("/"):
         return False
     return True
 
@@ -115,15 +117,19 @@ def scrape_article(link, article_request = None):
 
 def scrape_tagesschau():
     articles = []
+    all_errors = ""
     articles_link, error = scrape_tagesschau_landing_page()
     if articles_link is None:
         print(error)
-        return []
+        return [],error
     else:
         for link in articles_link:
-            articles.append(scrape_article(link))
+            article, error = scrape_article(link)
+            articles.append(article)
+            if error:
+                all_errors += error            
             #time.sleep(2)
-    return articles
+    return articles,all_errors
 
 
 
@@ -132,16 +138,15 @@ def scrape_tagesschau():
 
 if __name__ == "__main__":
     print("Starte Tagesschau Scraping")
-    tagesschau_articles = scrape_tagesschau()
+    tagesschau_articles,all_errors = scrape_tagesschau()
     print("Tagesschau abgeschlossen")
+    if all_errors:
+        print(f"Fehlermeldungen: {all_errors}")
     for article in tagesschau_articles:
-        if article[0] is not None:
-            print(f"Headline: {article[0][0]}")
-            print(f"Link: {article[0][1]}")
-            print(f"Datum: {article[0][2]}")
-            print(f"Artikeltext: {article[0][3][:200]}...")
-            print(f"Scraped am: {article[0][4]}")
+        if article is not None:
+            print(f"Headline: {article[0]}")
+            print(f"Link: {article[1]}")
+            print(f"Datum: {article[2]}")
+            print(f"Artikeltext: {article[3][:200]}...")
+            print(f"Scraped am: {article[4]}")
             print("-" * 80)
-        else:
-            print(f"Fehler: {article[1]}")
-            print("\n" + "-" * 80)
