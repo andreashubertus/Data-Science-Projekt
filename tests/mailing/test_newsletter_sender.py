@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from src.mailing.newsletter_sender import send_latest_newsletter
@@ -53,7 +55,12 @@ class DBConnectionMock:
 def test_send_latest_newsletter_returns_one_result_per_subscriber():
     db_handler = DBConnectionMock()
 
-    results = send_latest_newsletter(db_handler)
+    with patch("src.mailing.newsletter_sender.send_email") as mock_send_email:
+        mock_send_email.side_effect = [
+            type("Result", (), {"success": True, "error_message": None})(),
+            type("Result", (), {"success": True, "error_message": None})(),
+        ]
+        results = send_latest_newsletter(db_handler)
 
     assert len(results) == 2
 
@@ -61,7 +68,12 @@ def test_send_latest_newsletter_returns_one_result_per_subscriber():
 def test_send_latest_newsletter_returns_success_for_valid_subscribers():
     db_handler = DBConnectionMock()
 
-    results = send_latest_newsletter(db_handler)
+    with patch("src.mailing.newsletter_sender.send_email") as mock_send_email:
+        mock_send_email.side_effect = [
+            type("Result", (), {"success": True, "error_message": None})(),
+            type("Result", (), {"success": True, "error_message": None})(),
+        ]
+        results = send_latest_newsletter(db_handler)
 
     assert all(result.success is True for result in results)
 
@@ -69,7 +81,12 @@ def test_send_latest_newsletter_returns_success_for_valid_subscribers():
 def test_send_latest_newsletter_saves_each_delivery_result():
     db_handler = DBConnectionMock()
 
-    send_latest_newsletter(db_handler)
+    with patch("src.mailing.newsletter_sender.send_email") as mock_send_email:
+        mock_send_email.side_effect = [
+            type("Result", (), {"success": True, "error_message": None})(),
+            type("Result", (), {"success": True, "error_message": None})(),
+        ]
+        send_latest_newsletter(db_handler)
 
     assert len(db_handler.saved_results) == 2
     assert db_handler.saved_results[0]["summary_id"] == 1
@@ -80,7 +97,12 @@ def test_send_latest_newsletter_saves_each_delivery_result():
 def test_send_latest_newsletter_sends_only_to_matching_category_subscribers():
     db_handler = DBConnectionMock()
 
-    results = send_latest_newsletter(db_handler)
+    with patch("src.mailing.newsletter_sender.send_email") as mock_send_email:
+        mock_send_email.side_effect = [
+            type("Result", (), {"success": True, "error_message": None})(),
+            type("Result", (), {"success": True, "error_message": None})(),
+        ]
+        results = send_latest_newsletter(db_handler)
 
     assert len(results) == 2
     assert all(saved_result["summary_id"] == 1 for saved_result in db_handler.saved_results)
@@ -89,7 +111,12 @@ def test_send_latest_newsletter_sends_only_to_matching_category_subscribers():
 def test_send_latest_newsletter_marks_summary_as_sent_once():
     db_handler = DBConnectionMock()
 
-    send_latest_newsletter(db_handler)
+    with patch("src.mailing.newsletter_sender.send_email") as mock_send_email:
+        mock_send_email.side_effect = [
+            type("Result", (), {"success": True, "error_message": None})(),
+            type("Result", (), {"success": True, "error_message": None})(),
+        ]
+        send_latest_newsletter(db_handler)
 
     assert db_handler.marked_summary_ids == [1]
 
