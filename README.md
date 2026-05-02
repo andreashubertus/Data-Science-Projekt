@@ -1,100 +1,102 @@
 # Data Science Projekt
 
-## Mailing Part
+This project builds an AI news pipeline:
 
-My part of the project is the mailing module.
+1. collect news articles
+2. classify and summarize them with an LLM
+3. store summaries in the database
+4. send category-based email newsletters to subscribers
 
-It does these steps:
+## Project Structure
 
-1. Get the latest unsent summary from the DB.
-2. Get active subscribers from the DB.
-3. Convert DB rows into Python objects.
-4. Build the email subject and content.
-5. Send the email to each subscriber.
-6. Save one delivery result per subscriber.
-7. Mark the summary as sent.
+Source code:
 
-Main files:
+- `src/database/` - database logic
+- `src/llm/` - article classification and summarization
+- `src/mailing/` - newsletter generation and SMTP sending
+- `src/main.py` - future main pipeline entry point
 
-- `mailing/newsletter_sender.py` - main mailing workflow
-- `mailing/mappers.py` - converts and validates DB data
-- `mailing/content_builder.py` - builds email subject and body
-- `mailing/mailer_service.py` - simulated sending service
-- `mailing/models.py` - dataclasses
+Tests:
 
-Important note:
+- `tests/llm/` - tests for classifier and summarizer
+- `tests/mailing/` - tests for mailing logic
+- `tests/database/` - database-related tests
 
-- `name` and `created_at` may be `None`
-- `id`, `email`, `title`, and `content` are required
-- if required DB data is missing, the mailing code raises a clear error
+Scripts:
 
-## TODO For DB Student
+- `scripts/mailing_demo.py` - local demo script for the mailing flow
 
-The mailing module expects these DB methods:
+## Mailing Module
 
-### `get_latest_unsent_summary()`
+The mailing module:
 
-Should return:
+1. loads the latest unsent summary from the database
+2. reads the summary category
+3. loads active subscribers for that category
+4. builds text and HTML email content
+5. sends emails over SMTP
+6. stores delivery results
+7. marks the summary as sent
 
-```python
-{
-    "id": int,
-    "title": str,
-    "content": str,
-    "created_at": str | None
-}
-```
+Important mailing logic:
 
-If no summary exists, return `None`.
+- summaries and subscribers now include a `category`
+- newsletters are sent only to subscribers of the matching category
+- SMTP configuration is loaded from `.env`
 
-### `get_active_subscribers()`
+Main mailing files:
 
-Should return:
+- `src/mailing/newsletter_sender.py`
+- `src/mailing/content_builder.py`
+- `src/mailing/mailer_service.py`
+- `src/mailing/mappers.py`
+- `src/mailing/models.py`
+- `src/mailing/config_mailing.py`
 
-```python
-[
-    {
-        "id": int,
-        "email": str,
-        "name": str | None,
-        "active": bool
-    }
-]
-```
+## Setup
 
-If there are no subscribers, return `[]`.
+Install dependencies:
 
-### `save_delivery_result(summary_id, subscriber_id, success, error_message)`
-
-Should save one sending result.
-
-### `mark_summary_as_sent(summary_id)`
-
-Should mark the summary as sent, so it is not sent again.
-## LLM - Zusammenfassung
-
-Der LLM-Teil nutzt die Groq API mit dem Modell `llama-3.3-70b-versatile` 
-um gescrapte Artikel automatisch zusammenzufassen.
-
-### Setup
-
-1. Kostenlosen Groq API Key erstellen auf [console.groq.com](https://console.groq.com)
-
-2. Dependencies installieren:
 ```bash
-   pip install groq python-dotenv
+python3 -m pip install -r requirements.txt
 ```
 
-3. `.env` Datei erstellen (wichtig: ohne BOM-Encoding!):
-```powershell
-   # Windows
-   [System.IO.File]::WriteAllText(".env", "GROQ_API_KEY=dein_key_hier", (New-Object System.Text.UTF8Encoding $false))
-   
-   # Mac/Linux
-   echo "GROQ_API_KEY=dein_key_hier" > .env
+Create a local `.env` file based on `.env.example`.
+
+Required environment variables:
+
+```env
+GROQ_API_KEY=your_key_here
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_email@example.com
+SMTP_PASSWORD=your_app_password
+SMTP_SENDER_EMAIL=your_email@example.com
+SMTP_USE_TLS=true
 ```
 
-### Hinweise
-- Die `.env` Datei niemals committen
-- Den API Key auf [console.groq.com](https://console.groq.com) generieren und einfügen
-- Groq ist kostenlos mit 14.400 Anfragen pro Tag
+Notes:
+
+- do not commit `.env`
+- for Gmail SMTP, use an App Password instead of your normal password
+
+## Tests
+
+Run all mailing tests:
+
+```bash
+python3 -m pytest tests/mailing -q
+```
+
+Run all LLM tests:
+
+```bash
+python3 -m pytest tests/llm -q
+```
+
+Run the mailing demo:
+
+```bash
+python3 scripts/mailing_demo.py
+```
