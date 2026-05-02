@@ -21,7 +21,7 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
 
     summary = mappers.to_summary(summary_row)
 
-    subscriber_rows = db_handler.get_active_subscribers() or []
+    subscriber_rows = db_handler.get_active_subscribers(summary.category) or []
     subscribers = [mappers.to_subscriber(row) for row in subscriber_rows]
 
     if not subscribers:
@@ -32,6 +32,11 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     results = []
 
     for subscriber in subscribers:
+        if subscriber.category != summary.category:
+            raise mappers.MailingDataError(
+                f"Subscriber category {subscriber.category!r} does not match summary category {summary.category!r}."
+            )
+
         result = send_email(subscriber, email_message)
 
         db_handler.save_delivery_result(

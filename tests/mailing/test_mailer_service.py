@@ -6,6 +6,7 @@ def test_send_email_success():
     subscriber = Subscriber(
         id=1,
         email="user@example.com",
+        category="TECHNOLOGY",
         name="Alice",
         active=True
     )
@@ -28,6 +29,7 @@ def test_send_email_returns_failure_for_fail_address():
     subscriber = Subscriber(
         id=2,
         email="fail@example.com",  # triggers simulated failure
+        category="SPORTS",
         name="Bob",
         active=True
     )

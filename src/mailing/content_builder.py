@@ -3,6 +3,9 @@ from datetime import datetime
 from .mappers import MailingDataError
 
 def build_email(summary: Summary) -> EmailMessage:
+    if not summary.category:
+        raise MailingDataError("Cannot build email without a summary category.")
+
     if not summary.title:
         raise MailingDataError("Cannot build email without a summary title.")
 
@@ -16,15 +19,16 @@ def build_email(summary: Summary) -> EmailMessage:
         date_str = date.strftime("%d.%m")
 
     if date_str:
-        subject = f"AI News Summary ({date_str}): {summary.title}"
+        subject = f"AI News Summary [{summary.category}] ({date_str}): {summary.title}"
     else:
-        subject = f"AI News Summary: {summary.title}"
+        subject = f"AI News Summary [{summary.category}]: {summary.title}"
 
-    text_body = f"{summary.title}\n\n{summary.content}"
+    text_body = f"Category: {summary.category}\n{summary.title}\n\n{summary.content}"
 
     html_body = f"""
     <html>
         <body>
+            <p><strong>Category:</strong> {summary.category}</p>
             <h1>{summary.title}</h1>
             <p>{summary.content}</p>
         </body>

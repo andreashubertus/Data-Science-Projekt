@@ -13,6 +13,7 @@ def to_subscriber(row: dict) -> Subscriber:
     Expected DB fields:
     - id: int
     - email: str
+    - category: str
     - name: str | None (optional)
     - active: bool (optional)
     """
@@ -27,9 +28,14 @@ def to_subscriber(row: dict) -> Subscriber:
     if not email:
         raise MailingDataError("Subscriber row is missing required field 'email'.")
 
+    category = row.get("category")
+    if not category:
+        raise MailingDataError("Subscriber row is missing required field 'category'.")
+
     return Subscriber(
         id=subscriber_id,
         email=email,
+        category=category,
         name=row.get("name"),
         active=bool(row.get("active", True))
     )
@@ -40,6 +46,7 @@ def to_summary(row: dict) -> Summary:
 
     Expected DB fields:
     - id
+    - category
     - title
     - content
     - created_at
@@ -51,6 +58,10 @@ def to_summary(row: dict) -> Summary:
     if summary_id is None:
         raise MailingDataError("Summary row is missing required field 'id'.")
 
+    category = row.get("category")
+    if not category:
+        raise MailingDataError("Summary row is missing required field 'category'.")
+
     title = row.get("title")
     if not title:
         raise MailingDataError("Summary row is missing required field 'title'.")
@@ -61,6 +72,7 @@ def to_summary(row: dict) -> Summary:
 
     return Summary(
         id=summary_id,
+        category=category,
         title=title,
         content=content,
         created_at=row.get("created_at")

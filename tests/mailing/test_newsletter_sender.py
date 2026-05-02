@@ -11,22 +11,26 @@ class DBConnectionMock:
     def get_latest_unsent_summary(self):
         return {
             "id": 1,
+            "category": "TECHNOLOGY",
             "title": "AI Breakthrough in 2026",
             "content": "Researchers developed a new model that significantly improves reasoning tasks.",
             "created_at": "2026-03-29",
         }
 
-    def get_active_subscribers(self):
+    def get_active_subscribers(self, category):
+        assert category == "TECHNOLOGY"
         return [
             {
                 "id": 1,
                 "email": "user1@example.com",
+                "category": "TECHNOLOGY",
                 "name": "Alice",
                 "active": True,
             },
             {
                 "id": 2,
                 "email": "user2@example.com",
+                "category": "TECHNOLOGY",
                 "name": "Bob",
                 "active": True,
             },
@@ -73,6 +77,15 @@ def test_send_latest_newsletter_saves_each_delivery_result():
     assert db_handler.saved_results[1]["subscriber_id"] == 2
 
 
+def test_send_latest_newsletter_sends_only_to_matching_category_subscribers():
+    db_handler = DBConnectionMock()
+
+    results = send_latest_newsletter(db_handler)
+
+    assert len(results) == 2
+    assert all(saved_result["summary_id"] == 1 for saved_result in db_handler.saved_results)
+
+
 def test_send_latest_newsletter_marks_summary_as_sent_once():
     db_handler = DBConnectionMock()
 
@@ -105,7 +118,7 @@ def test_send_latest_newsletter_does_not_mark_summary_when_no_summary_exists():
 
 def test_send_latest_newsletter_returns_empty_list_when_no_subscribers():
     class NoSubscribersDB(DBConnectionMock):
-        def get_active_subscribers(self):
+        def get_active_subscribers(self, category):
             return []
 
     results = send_latest_newsletter(NoSubscribersDB())
@@ -115,7 +128,7 @@ def test_send_latest_newsletter_returns_empty_list_when_no_subscribers():
 
 def test_send_latest_newsletter_does_not_mark_summary_when_no_subscribers_exist():
     class NoSubscribersDB(DBConnectionMock):
-        def get_active_subscribers(self):
+        def get_active_subscribers(self, category):
             return []
 
     db_handler = NoSubscribersDB()
@@ -127,11 +140,12 @@ def test_send_latest_newsletter_does_not_mark_summary_when_no_subscribers_exist(
 
 def test_send_latest_newsletter_raises_on_invalid_subscriber_data():
     class InvalidSubscriberDB(DBConnectionMock):
-        def get_active_subscribers(self):
+        def get_active_subscribers(self, category):
             return [
                 {
                     "id": 1,
                     "email": None,
+                    "category": "TECHNOLOGY",
                     "name": "Alice",
                     "active": True,
                 }
@@ -139,3 +153,20 @@ def test_send_latest_newsletter_raises_on_invalid_subscriber_data():
 
     with pytest.raises(MailingDataError, match="email"):
         send_latest_newsletter(InvalidSubscriberDB())
+
+
+def test_send_latest_newsletter_raises_on_category_mismatch():
+    class WrongCategoryDB(DBConnectionMock):
+        def get_active_subscribers(self, category):
+            return [
+                {
+                    "id": 1,
+                    "email": "user1@example.com",
+                    "category": "SPORTS",
+                    "name": "Alice",
+                    "active": True,
+                }
+            ]
+
+    with pytest.raises(MailingDataError, match="does not match"):
+        send_latest_newsletter(WrongCategoryDB())

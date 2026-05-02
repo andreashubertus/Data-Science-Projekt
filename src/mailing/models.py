@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Subscriber:
     id: int
     email: str
+    category: str
     name: str | None = None
     active: bool = True
 
@@ -12,6 +13,7 @@ class Subscriber:
 @dataclass
 class Summary:
     id: int
+    category: str
     title: str
     content: str
     created_at: str | None = None 
