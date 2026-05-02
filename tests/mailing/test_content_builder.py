@@ -37,6 +37,8 @@ def test_build_email_with_date():
     email = build_email(summary)
 
     assert "29.03" in email.subject
+    assert "Date: 29.03" in email.text_body
+    assert "29.03" in email.html_body
 
 
 def test_build_email_without_date():
@@ -51,6 +53,7 @@ def test_build_email_without_date():
     email = build_email(summary)
 
     assert "(" not in email.subject
+    assert "Date:" not in email.text_body
 
 
 def test_build_email_html_structure():
@@ -65,8 +68,10 @@ def test_build_email_html_structure():
     email = build_email(summary)
 
     assert "<html>" in email.html_body
-    assert "<h1>" in email.html_body
-    assert "<p>" in email.html_body
+    assert "<body style=" in email.html_body
+    assert "<h1 style=" in email.html_body
+    assert "AI News Summary" in email.html_body
+    assert "POLITICS" in email.html_body
 
 
 def test_build_email_rejects_missing_content():

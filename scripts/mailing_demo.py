@@ -38,13 +38,6 @@ class DBConnectionMock:
                 "category": category,
                 "name": "Vitalii",
                 "active": True
-            },
-            {
-                "id": 2,
-                "email": "user2@example.com",
-                "category": category,
-                "name": "Bob",
-                "active": True
             }
         ]
 
