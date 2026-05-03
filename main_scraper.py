@@ -3,7 +3,7 @@ import scraper_theconversation
 import time
 
 
-def main():
+def main(verbose = False):
     article_list = []
     print("Starte den Scraping-Prozess für Tagesschau...")
     tagesschau_articles,errormessage = scraper_tagesschau.scrape_tagesschau()
@@ -17,17 +17,18 @@ def main():
     print(f"The Conversation: {len(theconversation_articles)} Artikel-Links erfolgreich gescraped.\n")
     if errormessage != "":
         print(errormessage)
-    for article in article_list:
-        if article is not None:
-            print(f"Headline: {article[0]}")
-            print(f"Link: {article[1]}")
-            print(f"Datum: {article[2]}")
-            print(f"Artikeltext: {article[3][:200]}...")
-            print(f"Scraped am: {article[4]}")
-            print("-" * 80)
+    if verbose:
+        for article in article_list:
+            if article is not None:
+                print(f"Headline: {article[0]}")
+                print(f"Link: {article[1]}")
+                print(f"Datum: {article[2]}")
+                print(f"Artikeltext: {article[3][:200]}...")
+                print(f"Scraped am: {article[4]}")
+                print("-" * 80)
 
 if __name__ == "__main__":
     start_time = time.time()
-    main()
+    main(verbose=True)
     end_time = time.time()
     print(end_time-start_time)
