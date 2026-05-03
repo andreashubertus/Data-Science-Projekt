@@ -10,6 +10,7 @@ headers = {
 
 
 def is_valid_link(url):
+    """Returns True if the URL is a valid Tagesschau article link."""
     exclude_list = [
         "https://www.tagesschau.de",
         "/wetter/regenradar-deutschland",
@@ -26,6 +27,8 @@ def is_valid_link(url):
 
 
 def scrape_tagesschau_landing_page(request = None):
+    """Scrapes article links from the Tagesschau homepage. Returns (links, errormessage)."""
+
     errormessage = ""
     url = "https://www.tagesschau.de/"
     if request is None:
@@ -47,6 +50,7 @@ def scrape_tagesschau_landing_page(request = None):
 
 
 def get_article_headline(article_soup, link, errormessage, found_issues):
+    """Extracts the headline from a Tagesschau article. Returns (headline, errormessage, found_issues)."""
     article_headline = article_soup.find(class_ = "article-head__headline--text")
     if article_headline is None:
         errormessage += f"Keine Überschrift gefunden, überspringe Artikel: {link}.\n"
@@ -56,6 +60,7 @@ def get_article_headline(article_soup, link, errormessage, found_issues):
     return article_headline, errormessage, found_issues
 
 def get_article_text(article_soup, link, errormessage, found_issues):
+    """Extracts the body text from a Tagesschau article. Returns (text, errormessage, found_issues)."""
     article = article_soup.find_all("p", class_="textabsatz")
     if article is None or article == []:
         errormessage += f"Keine Artikeltext gefunden, überspringe Artikel: {link}.\n"
@@ -73,6 +78,7 @@ def get_article_text(article_soup, link, errormessage, found_issues):
 
 
 def get_article_date(article_soup, link, errormessage, found_issues):
+    """Extracts the date from a Tagesschau article. Returns (date, errormessage, found_issues)."""
     date = article_soup.find(class_ = "metatextline")
     if date is None:
         errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}.\n"
@@ -84,6 +90,7 @@ def get_article_date(article_soup, link, errormessage, found_issues):
     return article_date, errormessage, found_issues
 
 def scrape_article(link, article_request = None):
+    """Scrapes a single Tagesschau article. Returns ([headline, link, date, text, scraped_at], errormessage)."""
     errormessage = ""
     if not link.startswith("http"):
         link = "https://www.tagesschau.de" + link
@@ -116,6 +123,7 @@ def scrape_article(link, article_request = None):
     return [article_headline, link, article_date, article_text, datetime.now().strftime("%Y-%m-%d %H:%M:%S")],errormessage
 
 def scrape_tagesschau():
+    """Scrapes all articles from Tagesschau. Returns (articles, errormessage)."""
     articles = []
     all_errors = ""
     articles_link, error = scrape_tagesschau_landing_page()

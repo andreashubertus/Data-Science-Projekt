@@ -4,6 +4,7 @@ import time
 
 
 def main(verbose = False):
+    """Scrapes articles from Tagesschau and The Conversation and optionally prints them."""
     article_list = []
     print("Starte den Scraping-Prozess für Tagesschau...")
     tagesschau_articles,errormessage = scraper_tagesschau.scrape_tagesschau()

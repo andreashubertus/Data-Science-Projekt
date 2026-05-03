@@ -10,6 +10,7 @@ headers = {
 
 
 def get_links_from_theconversation_rss(request=None):
+    """Extracts article links from The Conversation RSS feed. Returns (links, errormessage)."""
     errormessage = ""
     rss_url = "https://theconversation.com/global/articles.atom"
 
@@ -28,6 +29,7 @@ def get_links_from_theconversation_rss(request=None):
 
 
 def get_article_headline(article_soup, link, errormessage, found_issues):
+    """Extracts the headline from a The Conversation article. Returns (headline, errormessage, found_issues)."""
     article_headline = article_soup.find("h1", class_="entry-title")
     if article_headline is None:
         errormessage += f"Keine Überschrift gefunden, überspringe Artikel: {link}.\n"
@@ -38,6 +40,7 @@ def get_article_headline(article_soup, link, errormessage, found_issues):
 
 
 def get_article_text(article_soup, link, errormessage, found_issues):
+    """Extracts the body text from a The Conversation article. Returns (text, errormessage, found_issues)."""
     content_div = article_soup.find("div", itemprop="articleBody")
     if content_div is None:
         errormessage += f"Keine Artikeltext gefunden, überspringe Artikel: {link}.\n"
@@ -64,6 +67,7 @@ def get_article_text(article_soup, link, errormessage, found_issues):
 
 
 def get_article_date(article_soup, link, errormessage, found_issues):
+    """Extracts the date from a The Conversation article. Returns (date, errormessage, found_issues)."""
     date_element = article_soup.find("time")
     if date_element is None or not date_element.has_attr('datetime'):
         errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}.\n"
@@ -75,6 +79,7 @@ def get_article_date(article_soup, link, errormessage, found_issues):
 
 
 def scrape_article(link , article_request = None):
+    """Scrapes a single The Conversation article. Returns ([headline, link, date, text, scraped_at], errormessage)."""
     error_message = ""
     if not link.startswith("http"):
         link = "https://theconversation.com" + link
@@ -115,7 +120,7 @@ def scrape_article(link , article_request = None):
 
 
 def scrape_theconversation():
-    articles = []
+    """Scrapes all articles from The Conversation. Returns (articles, errormessage)."""    articles = []
     all_errors = ""
     articles_link, error_message = get_links_from_theconversation_rss()
     all_errors += f"{error_message}\n"
