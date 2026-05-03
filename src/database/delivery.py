@@ -1,5 +1,5 @@
 from datetime import datetime
-from connection import get_connection
+from src.database.connection import get_connection
 
 
 def save_delivery_result(summary_id, subscriber_id, success, error_message=None):
