@@ -128,7 +128,7 @@ def scrape_tagesschau():
             articles.append(article)
             if error:
                 all_errors += error            
-            #time.sleep(2)
+            time.sleep(2)
     return articles,all_errors
 
 

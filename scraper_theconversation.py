@@ -3,10 +3,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import time
 
-
 headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+    'User-Agent': 'DHBW Data science student - Web Scraping for educational purposes)'
+}
     
 
 
@@ -77,7 +76,6 @@ def get_article_date(article_soup, link, errormessage, found_issues):
 
 def scrape_article(link , article_request = None):
     error_message = ""
-
     if not link.startswith("http"):
         link = "https://theconversation.com" + link
     if "theconversation.com" not in link:
@@ -129,8 +127,8 @@ def scrape_theconversation():
             article,error_message = scrape_article(link)
             articles.append(article)
             all_errors += error_message
-            #time.sleep(2)
-    return articles, all_errors
+            time.sleep(2)
+        return articles, all_errors
 
 
 if __name__ == "__main__":
