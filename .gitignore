@@ -10,3 +10,4 @@ __pycache__/
 venv/
 .vscode/settings.json
 .env
+.env.example

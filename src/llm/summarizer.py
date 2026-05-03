@@ -15,6 +15,10 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
+from src.database.digests import save_digest
+from src.database.articles import get_articles_by_category
+from src.database.summary import save_chunk
+
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -147,7 +151,7 @@ def summarize_digest(chunk_summaries: list[str]) -> str:
     return _generate_completion(_get_digest_prompt(), combined, MAX_TOKENS_DIGEST)
 
 
-def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
+def build_category_digest(category: str, chunk_size: int = 5) -> str:
     """Builds and persists the digest for a news category.
 
     Loads all articles for the category from the database, splits them into
@@ -174,7 +178,7 @@ def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
     if category not in VALID_CATEGORIES:
         raise ValueError(f"Invalid category '{category}'. Must be one of {VALID_CATEGORIES}")
 
-    articles = db_module.get_articles_by_category(category)
+    articles = get_articles_by_category(category)
     texts = [a.get("text") for a in articles if a.get("text")]
 
     if not texts:
@@ -184,10 +188,12 @@ def build_category_digest(db_module, category: str, chunk_size: int = 5) -> str:
 
     chunk_summaries = []
     for chunk in chunks:
-        chunk_summaries.append(summarize_chunk(chunk))
+        chunk_summary = summarize_chunk(chunk)
+        chunk_summaries.append(chunk_summary)
+        save_chunk(category, chunk_summary)
 
     digest = summarize_digest(chunk_summaries)
 
-    db_module.save_digest(category, digest)
+    save_digest(category, digest)
 
     return digest

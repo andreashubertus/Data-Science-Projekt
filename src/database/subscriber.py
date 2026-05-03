@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime
-from connection import get_connection
+from src.database.connection import get_connection
 
 
 def add_subscriber(email, name=None):

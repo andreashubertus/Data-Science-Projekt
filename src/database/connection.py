@@ -28,7 +28,8 @@ def init_db():
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 category    TEXT NOT NULL,
                 content     TEXT NOT NULL,
-                created_at  TEXT NOT NULL
+                created_at  TEXT NOT NULL,
+                sent        INTEGER NOT NULL DEFAULT 0
             )
         """)
         conn.execute("""
@@ -43,10 +44,9 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS summaries (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                title       TEXT NOT NULL,
+                category    TEXT NOT NULL,
                 content     TEXT NOT NULL,
-                created_at  TEXT,
-                sent        INTEGER NOT NULL DEFAULT 0
+                created_at  TEXT
             )
         """)
         conn.execute("""
