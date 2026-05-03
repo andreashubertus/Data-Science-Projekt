@@ -1,19 +1,22 @@
 import scraper_tagesschau
 import scraper_theconversation
+import time
 
 
 def main():
     article_list = []
     print("Starte den Scraping-Prozess für Tagesschau...")
     tagesschau_articles,errormessage = scraper_tagesschau.scrape_tagesschau()
-    article_list.append(tagesschau_articles)
+    article_list.extend(tagesschau_articles)
     print(f"Tagesschau: {len(tagesschau_articles)} Artikel erfolgreich gescraped.\n")
-    
+    if errormessage != "":
+        print(errormessage)
     print("Starte den Scraping-Prozess für The Conversation...")
-    theconversation_articles,errormassage = scraper_theconversation.get_links_from_theconversation_rss()
-    article_list.append(theconversation_articles)
+    theconversation_articles,errormessage = scraper_theconversation.scrape_theconversation()
+    article_list.extend(theconversation_articles)
     print(f"The Conversation: {len(theconversation_articles)} Artikel-Links erfolgreich gescraped.\n")
-    
+    if errormessage != "":
+        print(errormessage)
     for article in article_list:
         if article is not None:
             print(f"Headline: {article[0]}")
@@ -24,4 +27,7 @@ def main():
             print("-" * 80)
 
 if __name__ == "__main__":
+    start_time = time.time()
     main()
+    end_time = time.time()
+    print(end_time-start_time)
