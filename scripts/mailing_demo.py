@@ -1,4 +1,13 @@
-from mailing.newsletter_sender import send_latest_newsletter
+from pathlib import Path
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.mailing.newsletter_sender import send_latest_newsletter
 
 
 class DBConnectionMock:
