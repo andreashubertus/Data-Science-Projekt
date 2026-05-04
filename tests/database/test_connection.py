@@ -24,6 +24,6 @@ def test_init_db_creates_tables():
         ).fetchall()
         table_names = {row[0] for row in tables}
 
-    expected = {"articles", "digests", "subscribers", "summaries", "delivery_results"}
+    expected = {"articles", "digests", "subscribers", "subscriber_categories", "summaries", "delivery_results"}
     assert expected.issubset(table_names)
     conn.close()

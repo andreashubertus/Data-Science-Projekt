@@ -9,10 +9,10 @@ from .mailer_service import send_email
 logger = logging.getLogger(__name__)
 
 
-def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
+def send_latest_newsletter(db_handler, category: str) -> list[DeliveryResult]:
     """
-    1. get summary from DB
-    2. get subscribers from DB
+    1. get latest unsent digest for one category from DB
+    2. get subscribers for this category from DB
     3. convert DB data → dataclasses (mappers)
     4. build email content
     5. send to each subscriber
@@ -21,9 +21,12 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
     8. return a list of delivery results
     """
 
-    summary_row = db_handler.get_latest_unsent_summary()
+    summary_row = db_handler.get_latest_unsent_digest(category)
     if summary_row is None:
-        logger.info("No unsent summary found. Skipping newsletter delivery.")
+        logger.info(
+            "No unsent digest found for category=%s. Skipping newsletter delivery.",
+            category,
+        )
         return []
 
     summary = mappers.to_summary(summary_row)
@@ -80,9 +83,9 @@ def send_latest_newsletter(db_handler) -> list[DeliveryResult]:
 
         results.append(result)
 
-    db_handler.mark_summary_as_sent(summary.id)
+    db_handler.mark_digest_as_sent(summary.id)
     logger.info(
-        "Finished newsletter delivery for summary_id=%s. Marked summary as sent.",
+        "Finished newsletter delivery for digest_id=%s. Marked digest as sent.",
         summary.id,
     )
 

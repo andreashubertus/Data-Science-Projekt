@@ -11,11 +11,11 @@ from src.mailing.newsletter_sender import send_latest_newsletter
 
 
 class DBConnectionMock:
-    def get_latest_unsent_summary(self):
+    def get_latest_unsent_digest(self, category):
+        assert category == "TECHNOLOGY"
         return {
             "id": 1,
             "category": "TECHNOLOGY",
-            "title": "AI Breakthroughs and Market Moves",
             "content": (
                 "Researchers presented a new AI model that shows stronger reasoning performance in multi-step tasks "
                 "and benchmark evaluations.\n\n"
@@ -47,12 +47,12 @@ class DBConnectionMock:
             f"success={success}, error_message={error_message})"
         )
 
-    def mark_summary_as_sent(self, summary_id):
-        print(f"Mock mark_summary_as_sent(summary_id={summary_id})")
+    def mark_digest_as_sent(self, digest_id):
+        print(f"Mock mark_digest_as_sent(digest_id={digest_id})")
 
 
 def main():
-    results = send_latest_newsletter(DBConnectionMock())
+    results = send_latest_newsletter(DBConnectionMock(), "TECHNOLOGY")
 
     print("\nDelivery results:")
     for result in results:

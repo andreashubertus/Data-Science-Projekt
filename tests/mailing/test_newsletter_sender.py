@@ -8,13 +8,13 @@ from src.mailing.mappers import MailingDataError
 class DBConnectionMock:
     def __init__(self):
         self.saved_results = []
-        self.marked_summary_ids = []
+        self.marked_digest_ids = []
 
-    def get_latest_unsent_summary(self):
+    def get_latest_unsent_digest(self, category):
+        assert category == "TECHNOLOGY"
         return {
             "id": 1,
             "category": "TECHNOLOGY",
-            "title": "AI Breakthrough in 2026",
             "content": "Researchers developed a new model that significantly improves reasoning tasks.",
             "created_at": "2026-03-29",
         }
@@ -48,8 +48,8 @@ class DBConnectionMock:
             }
         )
 
-    def mark_summary_as_sent(self, summary_id):
-        self.marked_summary_ids.append(summary_id)
+    def mark_digest_as_sent(self, digest_id):
+        self.marked_digest_ids.append(digest_id)
 
 
 def test_send_latest_newsletter_returns_one_result_per_subscriber():
@@ -60,7 +60,7 @@ def test_send_latest_newsletter_returns_one_result_per_subscriber():
             type("Result", (), {"success": True, "error_message": None})(),
             type("Result", (), {"success": True, "error_message": None})(),
         ]
-        results = send_latest_newsletter(db_handler)
+        results = send_latest_newsletter(db_handler, "TECHNOLOGY")
 
     assert len(results) == 2
 
@@ -73,7 +73,7 @@ def test_send_latest_newsletter_returns_success_for_valid_subscribers():
             type("Result", (), {"success": True, "error_message": None})(),
             type("Result", (), {"success": True, "error_message": None})(),
         ]
-        results = send_latest_newsletter(db_handler)
+        results = send_latest_newsletter(db_handler, "TECHNOLOGY")
 
     assert all(result.success is True for result in results)
 
@@ -86,7 +86,7 @@ def test_send_latest_newsletter_saves_each_delivery_result():
             type("Result", (), {"success": True, "error_message": None})(),
             type("Result", (), {"success": True, "error_message": None})(),
         ]
-        send_latest_newsletter(db_handler)
+        send_latest_newsletter(db_handler, "TECHNOLOGY")
 
     assert len(db_handler.saved_results) == 2
     assert db_handler.saved_results[0]["summary_id"] == 1
@@ -102,7 +102,7 @@ def test_send_latest_newsletter_sends_only_to_matching_category_subscribers():
             type("Result", (), {"success": True, "error_message": None})(),
             type("Result", (), {"success": True, "error_message": None})(),
         ]
-        results = send_latest_newsletter(db_handler)
+        results = send_latest_newsletter(db_handler, "TECHNOLOGY")
 
     assert len(results) == 2
     assert all(saved_result["summary_id"] == 1 for saved_result in db_handler.saved_results)
@@ -116,31 +116,31 @@ def test_send_latest_newsletter_marks_summary_as_sent_once():
             type("Result", (), {"success": True, "error_message": None})(),
             type("Result", (), {"success": True, "error_message": None})(),
         ]
-        send_latest_newsletter(db_handler)
+        send_latest_newsletter(db_handler, "TECHNOLOGY")
 
-    assert db_handler.marked_summary_ids == [1]
+    assert db_handler.marked_digest_ids == [1]
 
 
 def test_send_latest_newsletter_returns_empty_list_when_no_summary():
     class NoSummaryDB(DBConnectionMock):
-        def get_latest_unsent_summary(self):
+        def get_latest_unsent_digest(self, category):
             return None
 
-    results = send_latest_newsletter(NoSummaryDB())
+    results = send_latest_newsletter(NoSummaryDB(), "TECHNOLOGY")
 
     assert results == []
 
 
 def test_send_latest_newsletter_does_not_mark_summary_when_no_summary_exists():
     class NoSummaryDB(DBConnectionMock):
-        def get_latest_unsent_summary(self):
+        def get_latest_unsent_digest(self, category):
             return None
 
     db_handler = NoSummaryDB()
 
-    send_latest_newsletter(db_handler)
+    send_latest_newsletter(db_handler, "TECHNOLOGY")
 
-    assert db_handler.marked_summary_ids == []
+    assert db_handler.marked_digest_ids == []
 
 
 def test_send_latest_newsletter_returns_empty_list_when_no_subscribers():
@@ -148,7 +148,7 @@ def test_send_latest_newsletter_returns_empty_list_when_no_subscribers():
         def get_active_subscribers(self, category):
             return []
 
-    results = send_latest_newsletter(NoSubscribersDB())
+    results = send_latest_newsletter(NoSubscribersDB(), "TECHNOLOGY")
 
     assert results == []
 
@@ -160,9 +160,9 @@ def test_send_latest_newsletter_does_not_mark_summary_when_no_subscribers_exist(
 
     db_handler = NoSubscribersDB()
 
-    send_latest_newsletter(db_handler)
+    send_latest_newsletter(db_handler, "TECHNOLOGY")
 
-    assert db_handler.marked_summary_ids == []
+    assert db_handler.marked_digest_ids == []
 
 
 def test_send_latest_newsletter_raises_on_invalid_subscriber_data():
@@ -179,7 +179,7 @@ def test_send_latest_newsletter_raises_on_invalid_subscriber_data():
             ]
 
     with pytest.raises(MailingDataError, match="email"):
-        send_latest_newsletter(InvalidSubscriberDB())
+        send_latest_newsletter(InvalidSubscriberDB(), "TECHNOLOGY")
 
 
 def test_send_latest_newsletter_raises_on_category_mismatch():
@@ -196,4 +196,4 @@ def test_send_latest_newsletter_raises_on_category_mismatch():
             ]
 
     with pytest.raises(MailingDataError, match="does not match"):
-        send_latest_newsletter(WrongCategoryDB())
+        send_latest_newsletter(WrongCategoryDB(), "TECHNOLOGY")

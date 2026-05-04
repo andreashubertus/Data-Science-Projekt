@@ -62,9 +62,7 @@ def to_summary(row: dict) -> Summary:
     if not category:
         raise MailingDataError("Summary row is missing required field 'category'.")
 
-    title = row.get("title")
-    if not title:
-        raise MailingDataError("Summary row is missing required field 'title'.")
+    title = row.get("title") or f"{category.title()} Digest"
 
     content = row.get("content")
     if not content:

@@ -21,6 +21,7 @@ def init_db():
         - articles: Scraped news articles with optional category.
         - digests: Generated digests per category with sent status.
         - subscribers: Email subscribers with active flag.
+        - subscriber_categories: Many-to-many mapping of subscribers to categories.
         - summaries: Summary chunks generated per category.
         - delivery_results: Per-subscriber delivery outcomes linked
           to summaries and subscribers via foreign keys.
@@ -54,6 +55,14 @@ def init_db():
                 name         TEXT,
                 active       INTEGER NOT NULL DEFAULT 1,
                 subscribed_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS subscriber_categories (
+                subscriber_id INTEGER NOT NULL,
+                category      TEXT NOT NULL,
+                PRIMARY KEY (subscriber_id, category),
+                FOREIGN KEY (subscriber_id) REFERENCES subscribers(id)
             )
         """)
         conn.execute("""

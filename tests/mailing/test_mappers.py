@@ -91,13 +91,13 @@ def test_to_summary_without_created_at():
     row = {
         "id": 2,
         "category": "SPORTS",
-        "title": "Title",
         "content": "Content"
     }
 
     summary = to_summary(row)
 
     assert summary.category == "SPORTS"
+    assert summary.title == "Sports Digest"
     assert summary.created_at is None
 
 
@@ -113,7 +113,7 @@ def test_to_summary_rejects_missing_content():
         to_summary(row)
 
 
-def test_to_summary_rejects_missing_title():
+def test_to_summary_uses_fallback_title_when_missing():
     row = {
         "id": 3,
         "category": "POLITICS",
@@ -121,8 +121,9 @@ def test_to_summary_rejects_missing_title():
         "content": "Content"
     }
 
-    with pytest.raises(MailingDataError, match="title"):
-        to_summary(row)
+    summary = to_summary(row)
+
+    assert summary.title == "Politics Digest"
 
 
 def test_to_summary_rejects_missing_category():
