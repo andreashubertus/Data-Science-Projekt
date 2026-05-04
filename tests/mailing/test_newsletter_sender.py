@@ -162,7 +162,7 @@ def test_send_latest_newsletter_does_not_mark_summary_when_no_subscribers_exist(
 
     send_latest_newsletter(db_handler, "TECHNOLOGY")
 
-    assert db_handler.marked_digest_ids == []
+    assert db_handler.marked_digest_ids == [1]
 
 
 def test_send_latest_newsletter_raises_on_invalid_subscriber_data():

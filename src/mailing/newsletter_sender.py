@@ -49,6 +49,12 @@ def send_latest_newsletter(db_handler, category: str) -> list[DeliveryResult]:
             "No subscribers found for category=%s. Skipping delivery.",
             summary.category,
         )
+        db_handler.mark_digest_as_sent(summary.id)
+        logger.info(
+            "Marked digest_id=%s as sent because no subscribers exist for category=%s.",
+            summary.id,
+            summary.category,
+        )
         return []
 
     email_message = build_email(summary)
