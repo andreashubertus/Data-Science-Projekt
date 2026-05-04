@@ -14,20 +14,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
-def _make_db(
-    articles=None,
-    subscriber_categories=None,
-    latest_digest=None,
-):
-    """Create a mock database module with configurable return values."""
-    db = MagicMock()
-    db.get_articles_by_category.return_value = articles or []
-    db.get_subscriber_categories.return_value = subscriber_categories or []
-    db.get_latest_digest.return_value = latest_digest
-    db.save_digest.return_value = None
-    return db
-
-
 def _make_completion_response(text):
     """Returns a minimal mock that mimics the Groq chat completion response."""
     response = MagicMock()
@@ -231,108 +217,110 @@ class TestBuildCategoryDigest:
         """Invalid categories should raise a ValueError."""
         from src.llm.summarizer import build_category_digest
 
-        db = _make_db()
         with pytest.raises(ValueError, match="Invalid category"):
-            build_category_digest(db, "INVALID")
+            build_category_digest("INVALID")
 
     def test_zero_chunk_size_raises_value_error(self):
         """A chunk size of zero must be rejected."""
         from src.llm.summarizer import build_category_digest
 
-        db = _make_db()
         with pytest.raises(ValueError, match="chunk_size"):
-            build_category_digest(db, "SPORTS", chunk_size=0)
+            build_category_digest("SPORTS", chunk_size=0)
 
     def test_negative_chunk_size_raises_value_error(self):
         """A negative chunk size must be rejected."""
         from src.llm.summarizer import build_category_digest
 
-        db = _make_db()
         with pytest.raises(ValueError, match="chunk_size"):
-            build_category_digest(db, "SPORTS", chunk_size=-1)
+            build_category_digest("SPORTS", chunk_size=-1)
 
     def test_no_articles_returns_info_message(self):
         """When no articles exist, an info message should be returned."""
-        from src.llm.summarizer import build_category_digest
-
-        db = _make_db(articles=[])
-        result = build_category_digest(db, "SPORTS")
+        with patch("src.llm.summarizer.get_articles_by_category", return_value=[]):
+            from src.llm.summarizer import build_category_digest
+            result = build_category_digest("SPORTS")
         assert "SPORTS" in result
         assert "available" in result.lower()
 
     def test_articles_with_empty_text_are_ignored(self):
         """Articles with no text should be filtered out."""
-        from src.llm.summarizer import build_category_digest
-
-        db = _make_db(articles=[{"text": ""}, {"text": None}])
-        result = build_category_digest(db, "SPORTS")
+        with patch("src.llm.summarizer.get_articles_by_category", return_value=[{"text": ""}, {"text": None}]):
+            from src.llm.summarizer import build_category_digest
+            result = build_category_digest("SPORTS")
         assert "available" in result.lower()
 
     def test_articles_without_text_key_are_ignored(self):
         """Articles missing the text key should also be ignored safely."""
-        from src.llm.summarizer import build_category_digest
-
-        db = _make_db(articles=[{}, {"text": ""}, {"text": None}])
-        result = build_category_digest(db, "SPORTS")
+        with patch("src.llm.summarizer.get_articles_by_category", return_value=[{}, {"text": ""}, {"text": None}]):
+            from src.llm.summarizer import build_category_digest
+            result = build_category_digest("SPORTS")
         assert "available" in result.lower()
 
     def test_digest_is_saved_to_db(self):
         """The finished digest should be persisted to the database exactly once."""
         with (
+            patch("src.llm.summarizer.get_articles_by_category", return_value=[{"text": "Article A"}]),
+            patch("src.llm.summarizer.save_chunk"),
+            patch("src.llm.summarizer.save_digest") as mock_save_digest,
             patch("src.llm.summarizer.summarize_chunk", return_value="chunk-summary"),
             patch("src.llm.summarizer.summarize_digest", return_value="final-digest"),
         ):
             from src.llm.summarizer import build_category_digest
 
-            db = _make_db(articles=[{"text": "Article A"}])
-            build_category_digest(db, "TECHNOLOGY")
+            build_category_digest("TECHNOLOGY")
 
-        db.save_digest.assert_called_once_with("TECHNOLOGY", "final-digest")
+        mock_save_digest.assert_called_once_with("TECHNOLOGY", "final-digest")
 
     def test_lowercase_category_is_normalized(self):
         """Lowercase category names should be normalized to uppercase."""
         with (
+            patch("src.llm.summarizer.get_articles_by_category", return_value=[{"text": "Article A"}]) as mock_get_articles,
+            patch("src.llm.summarizer.save_chunk"),
+            patch("src.llm.summarizer.save_digest") as mock_save_digest,
             patch("src.llm.summarizer.summarize_chunk", return_value="chunk-summary"),
             patch("src.llm.summarizer.summarize_digest", return_value="final-digest"),
         ):
             from src.llm.summarizer import build_category_digest
 
-            db = _make_db(articles=[{"text": "Article A"}])
-            build_category_digest(db, "technology")
+            build_category_digest("technology")
 
-        db.get_articles_by_category.assert_called_once_with("TECHNOLOGY")
-        db.save_digest.assert_called_once_with("TECHNOLOGY", "final-digest")
+        mock_get_articles.assert_called_once_with("TECHNOLOGY")
+        mock_save_digest.assert_called_once_with("TECHNOLOGY", "final-digest")
 
     def test_returns_digest_text(self):
         """build_category_digest should return the digest text."""
         with (
+            patch("src.llm.summarizer.get_articles_by_category", return_value=[{"text": "Article A"}]),
+            patch("src.llm.summarizer.save_chunk"),
+            patch("src.llm.summarizer.save_digest"),
             patch("src.llm.summarizer.summarize_chunk", return_value="chunk-summary"),
             patch("src.llm.summarizer.summarize_digest", return_value="final-digest"),
         ):
             from src.llm.summarizer import build_category_digest
 
-            db = _make_db(articles=[{"text": "Article A"}])
-            result = build_category_digest(db, "TECHNOLOGY")
+            result = build_category_digest("TECHNOLOGY")
 
         assert result == "final-digest"
 
     def test_chunking_splits_articles_correctly(self):
         """Articles should be split into chunks of the correct size."""
         chunk_calls = []
+        articles = [{"text": f"Article {i}"} for i in range(7)]
 
         def fake_summarize_chunk(articles):
             chunk_calls.append(len(articles))
             return "summary"
 
         with (
+            patch("src.llm.summarizer.get_articles_by_category", return_value=articles),
+            patch("src.llm.summarizer.save_chunk"),
+            patch("src.llm.summarizer.save_digest"),
             patch("src.llm.summarizer.summarize_chunk", side_effect=fake_summarize_chunk),
             patch("src.llm.summarizer.summarize_digest", return_value="digest"),
         ):
             from src.llm.summarizer import build_category_digest
 
-            articles = [{"text": f"Article {i}"} for i in range(7)]
-            db = _make_db(articles=articles)
-            build_category_digest(db, "ECONOMY", chunk_size=3)
+            build_category_digest("ECONOMY", chunk_size=3)
 
         assert chunk_calls == [3, 3, 1]
 
@@ -341,6 +329,6 @@ class TestBuildCategoryDigest:
         from src.llm.summarizer import VALID_CATEGORIES, build_category_digest
 
         for category in VALID_CATEGORIES:
-            db = _make_db(articles=[])
-            result = build_category_digest(db, category)
-            assert isinstance(result, str)
+            with patch("src.llm.summarizer.get_articles_by_category", return_value=[]):
+                result = build_category_digest(category)
+                assert isinstance(result, str)

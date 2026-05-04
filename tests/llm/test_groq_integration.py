@@ -20,7 +20,9 @@ load_dotenv()
 
 
 def _require_groq_api_key() -> None:
-    """Skip the test when no Groq API key is available in the environment."""
+    """Skip unless integration tests are explicitly enabled and configured."""
+    if os.environ.get("RUN_GROQ_INTEGRATION") != "1":
+        pytest.skip("RUN_GROQ_INTEGRATION is not set to 1; skipping Groq integration test.")
     if not os.environ.get("GROQ_API_KEY"):
         pytest.skip("GROQ_API_KEY not set; skipping Groq integration test.")
 
