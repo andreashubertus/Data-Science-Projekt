@@ -11,3 +11,4 @@ venv/
 .vscode/settings.json
 .env
 .env.example
+.coverage

@@ -1,7 +1,6 @@
 import sqlite3
 from datetime import datetime
 from src.database.connection import get_connection
-from src.llm.classifier import classify_article
 
 def insert_articles(articles):
     """Inserts a list of articles into the database.
@@ -56,12 +55,16 @@ def get_all_articles():
     return [dict(row) for row in rows]
 
 
-def transfer_article_categories():
+def transfer_article_categories(classify_fn):
     """Classifies uncategorized articles and persists the category.
 
-    Fetches all articles without a category, calls classify_article()
+    Fetches all articles without a category, calls classify_fn()
     for each, and writes the result back. Articles with empty text or
     classification errors are skipped.
+
+    Args:
+        classify_fn: Callable that accepts an article text as str
+            and returns a category name as str.
 
     Returns:
         Tuple (updated, skipped) with the count of updated and
@@ -85,7 +88,7 @@ def transfer_article_categories():
             continue
 
         try:
-            category = classify_article(text)
+            category = classify_fn(text)
         except Exception as exc:
             print(f"Could not classify article {article_id}: {exc}")
             skipped += 1
