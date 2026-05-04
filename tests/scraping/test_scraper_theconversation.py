@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from scraper_theconversation import *
+from src.scraper.scraper_theconversation import *
 import requests
 from bs4 import BeautifulSoup
 

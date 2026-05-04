@@ -1,7 +1,7 @@
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from scraper_tagesschau import (
+from src.scraper.scraper_tagesschau import (
     scrape_tagesschau_landing_page,
     get_article_headline,
     get_article_text,

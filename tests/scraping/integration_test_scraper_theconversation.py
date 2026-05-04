@@ -1,7 +1,7 @@
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from scraper_theconversation import (
+from src.scraper.scraper_theconversation import (
     get_links_from_theconversation_rss,
     get_article_headline,
     get_article_text,

@@ -2,9 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import time
+import xml.etree.ElementTree as ET
 
 headers = {
-    'User-Agent': 'DHBW Data science student - Web Scraping for educational purposes)'
+    'User-Agent': 'DHBW Data Science student - Web Scraping for educational purposes)'
 }
     
 
@@ -19,8 +20,20 @@ def get_links_from_theconversation_rss(request=None):
     if request.status_code != 200:
         errormessage += f"Keine Antwort vom TheConversation RSS-Feed. Status Code: {request.status_code}"
         return None, errormessage
-    soup = BeautifulSoup(request.content, "xml")
-    links = [link['href'] for link in soup.find_all('link') if 'rel' in link.attrs and link['rel'] == 'alternate' and link['href'] not in ["https://theconversation.com"]]
+
+    try:
+        root = ET.fromstring(request.content)
+    except ET.ParseError as exc:
+        errormessage += f"RSS-Feed konnte nicht geparst werden: {exc}"
+        return None, errormessage
+
+    namespace = {"atom": "http://www.w3.org/2005/Atom"}
+    links = [
+        link.attrib["href"]
+        for link in root.findall("atom:link", namespace)
+        if link.attrib.get("rel") == "alternate"
+        and link.attrib.get("href") != "https://theconversation.com"
+    ]
     
     if not links:
         errormessage += "Keine Artikel im TheConversation RSS-Feed gefunden. Überprüfe die Struktur des Feeds."
@@ -120,7 +133,8 @@ def scrape_article(link , article_request = None):
 
 
 def scrape_theconversation():
-    """Scrapes all articles from The Conversation. Returns (articles, errormessage)."""    articles = []
+    """Scrapes all articles from The Conversation. Returns (articles, errormessage)."""
+    articles = []
     all_errors = ""
     articles_link, error_message = get_links_from_theconversation_rss()
     all_errors += f"{error_message}\n"

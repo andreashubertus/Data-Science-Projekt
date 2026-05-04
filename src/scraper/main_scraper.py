@@ -1,6 +1,10 @@
-import scraper_tagesschau
-import scraper_theconversation
 import time
+
+try:
+    from src.scraper import scraper_tagesschau, scraper_theconversation
+except ModuleNotFoundError:
+    import scraper_tagesschau
+    import scraper_theconversation
 
 
 def main(verbose = False):
