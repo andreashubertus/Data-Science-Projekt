@@ -2,8 +2,16 @@ import logging
 
 try:
     from src.database import database
+    from src.llm.classifier import classify_article
+    from src.llm.summarizer import VALID_CATEGORIES, build_category_digest
+    from src.mailing.newsletter_sender import send_latest_newsletter
+    from src.scraper.main_scraper import scrape_all_sources
 except ModuleNotFoundError:
     from database import database
+    from llm.classifier import classify_article
+    from llm.summarizer import VALID_CATEGORIES, build_category_digest
+    from mailing.newsletter_sender import send_latest_newsletter
+    from scraper.main_scraper import scrape_all_sources
 
 
 logging.basicConfig(
@@ -15,52 +23,60 @@ logger = logging.getLogger(__name__)
 
 
 def run_pipeline() -> None:
-    """Run the project pipeline skeleton.
-
-    Current status:
-    - database initialization is ready
-    - scraper integration is still pending
-    - LLM/database integration still needs final alignment
-    - mailing integration still depends on the category-aware DB layer
-    """
+    """Run the full project pipeline from scraping to mailing."""
     logger.info("Starting project pipeline.")
 
     database.init_db()
     logger.info("Database initialized.")
 
-    # TODO: Enable the scraper step once the scraper module is finalized.
-    #
-    # Example future integration:
-    # from src.scraping.main_scraper import scrape_all_sources
-    # articles = scrape_all_sources()
-    # inserted_count = database.insert_articles(articles)
-    # logger.info("Inserted %s new article(s).", inserted_count)
+    scraped_articles, scrape_errors = scrape_all_sources()
+    logger.info("Scraper collected %s article(s).", len(scraped_articles))
+    for error in scrape_errors:
+        logger.warning(error)
 
-    # TODO: Connect article classification once the DB layer stores categories.
-    #
-    # Example future integration:
-    # unsorted_articles = database.get_unsummarized_articles()
-    # for article in unsorted_articles:
-    #     category = classify_article(article["text"])
-    #     database.save_article_category(article["id"], category)
+    inserted_count = database.insert_articles(scraped_articles)
+    logger.info("Inserted %s new article(s) into the database.", inserted_count)
 
-    # TODO: Build one digest per category once DB helper functions are aligned.
-    #
-    # Example future integration:
-    # for category in VALID_CATEGORIES:
-    #     build_category_digest(database, category)
+    updated_count, skipped_count = database.transfer_article_categories(classify_article)
+    logger.info(
+        "Classification finished: %s article(s) updated, %s skipped.",
+        updated_count,
+        skipped_count,
+    )
 
-    # TODO: Enable mailing once the DB layer provides the category-aware
-    # mailing contract expected by src.mailing.newsletter_sender:
-    # - get_latest_unsent_summary() returning a summary with "category"
-    # - get_active_subscribers(category)
-    # - save_delivery_result(...)
-    # - mark_summary_as_sent(...)
-    #
-    # Example future integration:
-    # send_latest_newsletter(database)
+    built_digests = 0
+    sent_deliveries = 0
 
-    logger.info("Pipeline skeleton finished. Remaining steps are marked as TODO.")
+    for category in sorted(VALID_CATEGORIES):
+        try:
+            digest = build_category_digest(category)
+            if digest.startswith("No articles available"):
+                logger.info(
+                    "No digest built for category=%s because no articles are available.",
+                    category,
+                )
+            else:
+                built_digests += 1
+                logger.info("Built digest for category=%s.", category)
+        except Exception:
+            logger.exception("Failed to build digest for category=%s.", category)
+
+        try:
+            results = send_latest_newsletter(database, category)
+            sent_deliveries += len(results)
+            logger.info(
+                "Newsletter delivery for category=%s finished with %s result(s).",
+                category,
+                len(results),
+            )
+        except Exception:
+            logger.exception("Failed to send newsletter for category=%s.", category)
+
+    logger.info(
+        "Pipeline finished. Built %s digest(s) and processed %s delivery result(s).",
+        built_digests,
+        sent_deliveries,
+    )
 
 
 if __name__ == "__main__":

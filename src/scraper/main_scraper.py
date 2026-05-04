@@ -7,21 +7,30 @@ except ModuleNotFoundError:
     import scraper_theconversation
 
 
-def main(verbose = False):
-    """Scrapes articles from Tagesschau and The Conversation and optionally prints them."""
+def scrape_all_sources(verbose=False):
+    """Scrape all configured news sources and return collected articles.
+
+    Args:
+        verbose: When True, prints a short preview for each scraped article.
+
+    Returns:
+        Tuple ``(articles, errors)`` where ``articles`` is a flat list of
+        scraped article tuples and ``errors`` is a list of non-empty error
+        messages from the individual scrapers.
+    """
     article_list = []
-    print("Starte den Scraping-Prozess für Tagesschau...")
-    tagesschau_articles,errormessage = scraper_tagesschau.scrape_tagesschau()
+    errors = []
+
+    tagesschau_articles, errormessage = scraper_tagesschau.scrape_tagesschau()
     article_list.extend(tagesschau_articles)
-    print(f"Tagesschau: {len(tagesschau_articles)} Artikel erfolgreich gescraped.\n")
-    if errormessage != "":
-        print(errormessage)
-    print("Starte den Scraping-Prozess für The Conversation...")
-    theconversation_articles,errormessage = scraper_theconversation.scrape_theconversation()
+    if errormessage:
+        errors.append(f"Tagesschau: {errormessage}")
+
+    theconversation_articles, errormessage = scraper_theconversation.scrape_theconversation()
     article_list.extend(theconversation_articles)
-    print(f"The Conversation: {len(theconversation_articles)} Artikel-Links erfolgreich gescraped.\n")
-    if errormessage != "":
-        print(errormessage)
+    if errormessage:
+        errors.append(f"The Conversation: {errormessage}")
+
     if verbose:
         for article in article_list:
             if article is not None:
@@ -31,6 +40,17 @@ def main(verbose = False):
                 print(f"Artikeltext: {article[3][:200]}...")
                 print(f"Scraped am: {article[4]}")
                 print("-" * 80)
+    return article_list, errors
+
+
+def main(verbose=False):
+    """Run all scrapers and print a small command-line summary."""
+    print("Starte den Scraping-Prozess für Tagesschau und The Conversation...")
+    article_list, errors = scrape_all_sources(verbose=verbose)
+    print(f"Insgesamt {len(article_list)} Artikel erfolgreich gescraped.\n")
+    for error in errors:
+        print(error)
+    return article_list, errors
 
 if __name__ == "__main__":
     start_time = time.time()
