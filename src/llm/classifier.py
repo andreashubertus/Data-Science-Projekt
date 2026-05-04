@@ -14,7 +14,7 @@ from groq import Groq
 
 load_dotenv()
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 MAX_TOKENS = 10
 
 VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}

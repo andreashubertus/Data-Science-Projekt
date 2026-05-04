@@ -12,20 +12,15 @@ from src.database.subscriber import add_subscriber
 
 TEST_SUBSCRIBERS = [
     {
-        "email": "change-me-tech@example.com",
-        "name": "Tech Test",
-        "categories": ["TECHNOLOGY", "ECONOMY"],
+        "email": "Andreas.Hubertus@gmx.de",
+        "name": "Andreas",
+        "categories": ["POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"],
     },
     {
-        "email": "change-me-politics@example.com",
-        "name": "Politics Test",
-        "categories": ["POLITICS"],
-    },
-    {
-        "email": "change-me-culture@example.com",
-        "name": "Culture Test",
-        "categories": ["CULTURE", "SPORTS"],
-    },
+        "email": "ai.news.summarizer.dhbw@gmail.com",
+        "name": "Vitalii",
+        "categories": ["POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"],
+    }
 ]
 
 

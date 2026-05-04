@@ -27,7 +27,7 @@ except ModuleNotFoundError:
 from dotenv import load_dotenv
 from groq import Groq
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 MAX_TOKENS_CHUNK = 300
 MAX_TOKENS_DIGEST = 500
 
