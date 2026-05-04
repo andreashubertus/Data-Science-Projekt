@@ -4,12 +4,17 @@ from src.database.connection import get_connection
 from src.llm.classifier import classify_article
 
 def insert_articles(articles):
-    """
-    Insert a list of articles into the database.
-    Each article is expected to be in Andi's format:
-        [headline, link, date, text, scraped_at]
-    Skips duplicates (same link).
-    Returns the number of newly inserted articles.
+    """Inserts a list of articles into the database.
+
+    Skips None entries and duplicates identified by link.
+
+    Args:
+        articles: List of tuples of the form
+            (headline, link, date, text, scraped_at).
+            None entries in the list are ignored.
+
+    Returns:
+        Number of successfully inserted articles as int.
     """
     inserted = 0
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -37,7 +42,12 @@ def insert_articles(articles):
 
 
 def get_all_articles():
-    """Return all articles as a list of dicts."""
+    """Returns all articles from the database, sorted descending.
+
+    Returns:
+        List of dicts, each containing all columns of one article.
+        Sorted by inserted_at (newest first).
+    """
     with get_connection() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
@@ -47,13 +57,15 @@ def get_all_articles():
 
 
 def transfer_article_categories():
-    """Classify all articles without a category and write the result back to the DB.
+    """Classifies uncategorized articles and persists the category.
 
-    Fetches every article where ``category`` is NULL, calls ``classify_article``
-    on its text, and updates the row in place. Articles without text are skipped.
+    Fetches all articles without a category, calls classify_article()
+    for each, and writes the result back. Articles with empty text or
+    classification errors are skipped.
 
     Returns:
-        Tuple (updated, skipped) with the counts of processed and skipped articles.
+        Tuple (updated, skipped) with the count of updated and
+        skipped articles respectively.
     """
     with get_connection() as conn:
         conn.row_factory = sqlite3.Row
@@ -92,6 +104,15 @@ def transfer_article_categories():
     return updated, skipped
 
 def get_articles_by_category(category):
+    """Returns all articles belonging to a given category.
+
+    Args:
+        category: Category name as str to filter by.
+
+    Returns:
+        List of dicts with all columns of matching articles,
+        sorted by inserted_at (newest first).
+    """
     with get_connection() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(

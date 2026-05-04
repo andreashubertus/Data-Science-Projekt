@@ -4,7 +4,12 @@ from src.database.connection import get_connection
 
 
 def save_digest(category, content):
-    """Save a finished digest for a category."""
+    """Inserts a finished digest for a category into the digests table.
+
+    Args:
+        category: Category name as str the digest belongs to.
+        content: Digest content as str to be stored.
+    """
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_connection() as conn:
         cursor = conn.execute(
@@ -14,15 +19,23 @@ def save_digest(category, content):
         conn.commit()
 
 
-def get_latest_digest(category):
-    """Return the most recent digest for a category as a dict, or None."""
+def get_latest_unsent_digest(category):
+    """Returns the most recent unsent digest for a given category.
+
+    Args:
+        category: Category name as str to filter by.
+
+    Returns:
+        Dict with keys id, category, content, and created_at,
+        or None if no unsent digest exists for the category.
+    """
     with get_connection() as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             """
             SELECT id, category, content, created_at
             FROM digests
-            WHERE category = ?
+            WHERE sent = 0 AND category = ?
             ORDER BY created_at DESC, id DESC
             LIMIT 1
             """,
@@ -31,16 +44,15 @@ def get_latest_digest(category):
     return dict(row) if row else None
 
 
-def get_latest_digests_for_categories(categories):
-    """Return the latest digest per category for the given list of categories.
+def mark_digest_as_sent(digest_id):
+    """Marks a digest as sent to prevent it from being sent again.
 
-    Returns a dict mapping category -> digest dict. Categories without any
-    digest are omitted.
+    Args:
+        digest_id: Primary key of the digest row as int.
     """
-    result = {}
-    for category in categories:
-        digest = get_latest_digest(category)
-        if digest is not None:
-            result[category] = digest
-    return result
-
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE digests SET sent = 1 WHERE id = ?",
+            (digest_id,),
+        )
+        conn.commit()

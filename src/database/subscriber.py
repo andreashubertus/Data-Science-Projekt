@@ -4,7 +4,16 @@ from src.database.connection import get_connection
 
 
 def add_subscriber(email, name=None):
-    """Add an email to the subscribers list. Returns True if added, False if already exists."""
+    """Adds an email address to the subscribers list.
+
+    Args:
+        email: Email address as str to subscribe.
+        name: Optional display name as str. Defaults to None.
+
+    Returns:
+        True if the subscriber was added, False if the email
+        already exists.
+    """
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         with get_connection() as conn:
@@ -19,7 +28,15 @@ def add_subscriber(email, name=None):
 
 
 def remove_subscriber(email):
-    """Remove an email from the subscribers list. Returns True if removed, False if not found."""
+    """Removes an email address from the subscribers list.
+
+    Args:
+        email: Email address as str to remove.
+
+    Returns:
+        True if the subscriber was removed, False if the email
+        was not found.
+    """
     with get_connection() as conn:
         cursor = conn.execute("DELETE FROM subscribers WHERE email = ?", (email,))
         conn.commit()
@@ -27,14 +44,23 @@ def remove_subscriber(email):
 
 
 def get_all_subscribers():
-    """Return all subscriber emails as a list of strings."""
+    """Returns all subscriber email addresses.
+
+    Returns:
+        List of email address strings, ordered by subscribed_at.
+    """
     with get_connection() as conn:
         rows = conn.execute("SELECT email FROM subscribers ORDER BY subscribed_at").fetchall()
     return [row[0] for row in rows]
 
 
 def get_active_subscribers():
-    """Return all active subscribers as a list of dicts."""
+    """Returns all active subscribers.
+
+    Returns:
+        List of dicts with keys id, email, name, and active,
+        ordered by subscribed_at.
+    """
     with get_connection() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
