@@ -142,13 +142,19 @@ def test_none_content_raises_runtime_error():
 
 
 def test_sends_prompt_and_article_to_api():
-    """The API call should include both the system prompt and raw article text."""
+    """The API call should include both the system prompt and article excerpt."""
     mock_client = _make_client("SPORTS")
+    article = (
+        "Breaking news about the Olympics. "
+        "Athletes arrived in Paris for the opening week. "
+        "Officials also confirmed new security measures. "
+        "This fourth sentence should not be sent to the classifier."
+    )
 
     with patch("src.llm.classifier._get_client", return_value=mock_client):
         from src.llm.classifier import MODEL, MAX_TOKENS, classify_article
 
-        classify_article("Breaking news about the Olympics.")
+        classify_article(article)
 
     mock_client.chat.completions.create.assert_called_once()
     call_kwargs = mock_client.chat.completions.create.call_args.kwargs
@@ -158,7 +164,35 @@ def test_sends_prompt_and_article_to_api():
 
     messages = call_kwargs["messages"]
     assert any(message["role"] == "system" and message["content"] for message in messages)
-    assert any(
-        message["role"] == "user" and "Breaking news about the Olympics." in message["content"]
-        for message in messages
+    user_message = next(message["content"] for message in messages if message["role"] == "user")
+    assert "Breaking news about the Olympics." in user_message
+    assert "Athletes arrived in Paris for the opening week." in user_message
+    assert "Officials also confirmed new security measures." in user_message
+    assert "This fourth sentence should not be sent" not in user_message
+
+
+def test_prepare_article_excerpt_limits_text_to_first_sentences():
+    """Classification should use only the first few sentences of the article."""
+    from src.llm.classifier import _prepare_article_excerpt
+
+    article = (
+        "Sentence one. "
+        "Sentence two! "
+        "Sentence three? "
+        "Sentence four should be ignored."
     )
+
+    excerpt = _prepare_article_excerpt(article)
+
+    assert excerpt == "Sentence one. Sentence two! Sentence three?"
+
+
+def test_prepare_article_excerpt_truncates_long_single_paragraph():
+    """Very long text without sentence boundaries should still be capped."""
+    from src.llm.classifier import MAX_CLASSIFICATION_CHARS, _prepare_article_excerpt
+
+    article = "A" * (MAX_CLASSIFICATION_CHARS + 200)
+
+    excerpt = _prepare_article_excerpt(article)
+
+    assert len(excerpt) == MAX_CLASSIFICATION_CHARS

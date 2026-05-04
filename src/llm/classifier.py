@@ -8,6 +8,7 @@ If the response is not a valid category, the article is assigned a fallback.
 import os
 from functools import lru_cache
 from pathlib import Path
+import re
 
 from dotenv import load_dotenv
 from groq import Groq
@@ -16,6 +17,8 @@ load_dotenv()
 
 MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 MAX_TOKENS = 10
+MAX_CLASSIFICATION_SENTENCES = 3
+MAX_CLASSIFICATION_CHARS = 1500
 
 VALID_CATEGORIES = {"POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"}
 
@@ -93,6 +96,22 @@ def _extract_category(response) -> str:
     return content.strip().upper()
 
 
+def _prepare_article_excerpt(article: str) -> str:
+    """Reduce article text for classification to a short informative excerpt.
+
+    The first few sentences usually contain enough topic information for
+    coarse category classification, while keeping token usage low.
+    """
+    normalized = " ".join(article.split())
+    sentences = re.split(r"(?<=[.!?])\s+", normalized)
+    excerpt = " ".join(sentences[:MAX_CLASSIFICATION_SENTENCES]).strip()
+
+    if len(excerpt) > MAX_CLASSIFICATION_CHARS:
+        excerpt = excerpt[:MAX_CLASSIFICATION_CHARS].rstrip()
+
+    return excerpt or normalized[:MAX_CLASSIFICATION_CHARS].strip()
+
+
 def classify_article(article: str) -> str:
     """Classify a news article into one of the predefined categories.
 
@@ -117,14 +136,18 @@ def classify_article(article: str) -> str:
 
     client = _get_client()
     classify_prompt = _get_classify_prompt()
+    article_excerpt = _prepare_article_excerpt(article)
 
-    print(f"Sending article to LLM for classification (length={len(article)}).")
+    print(
+        "Sending article excerpt to LLM for classification "
+        f"(original_length={len(article)}, excerpt_length={len(article_excerpt)})."
+    )
 
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
             {"role": "system", "content": classify_prompt},
-            {"role": "user", "content": article},
+            {"role": "user", "content": article_excerpt},
         ],
         max_tokens=MAX_TOKENS,
     )
