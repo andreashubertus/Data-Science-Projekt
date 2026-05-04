@@ -10,17 +10,19 @@ from src.database.connection import init_db
 from src.database.subscriber import add_subscriber
 
 
+ALL_CATEGORIES = ["POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"]
+
 TEST_SUBSCRIBERS = [
     {
-        "email": "Andreas.Hubertus@gmx.de",
-        "name": "Andreas",
-        "categories": ["POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"],
+        "email": "replace-me-1@example.com",
+        "name": "Subscriber One",
+        "categories": ALL_CATEGORIES,
     },
     {
-        "email": "ai.news.summarizer.dhbw@gmail.com",
-        "name": "Vitalii",
-        "categories": ["POLITICS", "ECONOMY", "TECHNOLOGY", "SPORTS", "CULTURE"],
-    }
+        "email": "replace-me-2@example.com",
+        "name": "Subscriber Two",
+        "categories": ALL_CATEGORIES,
+    },
 ]
 
 
@@ -40,7 +42,10 @@ def main() -> None:
             f"- {subscriber['email']} ({', '.join(subscriber['categories'])}) -> {status}"
         )
 
-    print("\nDone. Replace the example email addresses with real ones before a live SMTP test.")
+    print(
+        "\nDone. Replace the placeholder email addresses with real ones "
+        "before a live SMTP test."
+    )
 
 
 if __name__ == "__main__":

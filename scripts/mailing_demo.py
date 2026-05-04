@@ -26,7 +26,7 @@ class DBConnectionMock:
                 "Overall, today's developments suggest that AI is continuing to move from experimental use cases "
                 "toward broader adoption in real products and business processes."
             ),
-            "created_at": "2026-03-29"
+            "created_at": "2026-03-29",
         }
 
     def get_active_subscribers(self, category):
@@ -34,10 +34,10 @@ class DBConnectionMock:
         return [
             {
                 "id": 1,
-                "email": "sebastian-rein.8@web.de",
+                "email": "demo-recipient@example.com",
                 "category": category,
-                "name": "Vitalii",
-                "active": True
+                "name": "Demo User",
+                "active": True,
             }
         ]
 
