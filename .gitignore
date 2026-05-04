@@ -10,3 +10,7 @@ __pycache__/
 venv/
 .vscode/settings.json
 .env
+
+#Database
+news.db
+*.db

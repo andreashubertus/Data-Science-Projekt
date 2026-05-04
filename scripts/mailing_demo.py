@@ -34,7 +34,7 @@ class DBConnectionMock:
         return [
             {
                 "id": 1,
-                "email": "ai.news.summarizer.dhbw@gmail.com",
+                "email": "sebastian-rein.8@web.de",
                 "category": category,
                 "name": "Vitalii",
                 "active": True
