@@ -4,7 +4,15 @@ from src.database.connection import get_connection
 
 
 def save_chunk(category, summarytext):
-    """Save a summary chunk for a category into the summaries table. Returns the new row id."""
+    """Inserts a summary chunk for a category into the summaries table.
+
+    Args:
+        category: Category name as str the summary belongs to.
+        summarytext: Summary content as str to be stored.
+
+    Returns:
+        Row id of the newly inserted record as int.
+    """
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with get_connection() as conn:
         cursor = conn.execute(
@@ -13,23 +21,3 @@ def save_chunk(category, summarytext):
         )
         conn.commit()
         return cursor.lastrowid
-
-
-def get_latest_unsent_summary():
-    """Return the latest unsent summary as a dict, or None."""
-    with get_connection() as conn:
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT id, title, content, created_at FROM summaries WHERE sent = 0 ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-    return dict(row) if row else None
-
-
-def mark_summary_as_sent(summary_id):
-    """Mark a summary as sent so it won't be sent again."""
-    with get_connection() as conn:
-        conn.execute(
-            "UPDATE summaries SET sent = 1 WHERE id = ?",
-            (summary_id,),
-        )
-        conn.commit()

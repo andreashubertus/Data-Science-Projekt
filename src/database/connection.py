@@ -6,10 +6,25 @@ DB_PATH = "news.db"
 
 
 def get_connection():
+    """Opens and returns a connection to the SQLite database.
+
+    Returns:
+        A sqlite3.Connection object for DB_PATH.
+    """
     return sqlite3.connect(DB_PATH)
 
 
 def init_db():
+    """Creates all required database tables if they do not exist.
+
+    Creates the following tables:
+        - articles: Scraped news articles with optional category.
+        - digests: Generated digests per category with sent status.
+        - subscribers: Email subscribers with active flag.
+        - summaries: Summary chunks generated per category.
+        - delivery_results: Per-subscriber delivery outcomes linked
+          to summaries and subscribers via foreign keys.
+    """
     with get_connection() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS articles (
