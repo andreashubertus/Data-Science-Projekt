@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime
-from src.database.connection import get_connection
+from .connection import get_connection
 
 
 def save_digest(category, content):

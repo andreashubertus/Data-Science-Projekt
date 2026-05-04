@@ -15,9 +15,14 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from src.database.digests import save_digest
-from src.database.articles import get_articles_by_category
-from src.database.summary import save_chunk
+try:
+    from src.database.digests import save_digest
+    from src.database.articles import get_articles_by_category
+    from src.database.summary import save_chunk
+except ModuleNotFoundError:
+    from database.digests import save_digest
+    from database.articles import get_articles_by_category
+    from database.summary import save_chunk
 
 from dotenv import load_dotenv
 from groq import Groq

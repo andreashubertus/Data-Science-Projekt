@@ -1,5 +1,5 @@
 from datetime import datetime
-from src.database.connection import get_connection
+from .connection import get_connection
 
 
 def save_delivery_result(summary_id, subscriber_id, success, error_message=None):
@@ -22,7 +22,6 @@ def save_delivery_result(summary_id, subscriber_id, success, error_message=None)
             (summary_id, subscriber_id, int(success), error_message, now),
         )
         conn.commit()
-
 
 
 
