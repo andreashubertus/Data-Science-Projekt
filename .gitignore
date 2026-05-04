@@ -1,6 +1,7 @@
 # Environment Variables
 .env
 .env.local
+.env.example
 
 # Python
 __pycache__/
@@ -9,8 +10,8 @@ __pycache__/
 .venv/
 venv/
 .vscode/settings.json
-.env
+.coverage
 
-#Database
+# Database
 news.db
 *.db

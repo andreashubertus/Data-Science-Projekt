@@ -1,0 +1,166 @@
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+import time
+import xml.etree.ElementTree as ET
+
+headers = {
+    'User-Agent': 'DHBW Data Science student - Web Scraping for educational purposes)'
+}
+    
+
+
+def get_links_from_theconversation_rss(request=None):
+    """Extracts article links from The Conversation RSS feed. Returns (links, errormessage)."""
+    errormessage = ""
+    rss_url = "https://theconversation.com/global/articles.atom"
+
+    if request is None:
+        request = requests.get(rss_url, headers=headers)
+    if request.status_code != 200:
+        errormessage += f"Keine Antwort vom TheConversation RSS-Feed. Status Code: {request.status_code}"
+        return None, errormessage
+
+    try:
+        root = ET.fromstring(request.content)
+    except ET.ParseError as exc:
+        errormessage += f"RSS-Feed konnte nicht geparst werden: {exc}"
+        return None, errormessage
+
+    namespace = {"atom": "http://www.w3.org/2005/Atom"}
+    links = [
+        link.attrib["href"]
+        for link in root.findall("atom:link", namespace)
+        if link.attrib.get("rel") == "alternate"
+        and link.attrib.get("href") != "https://theconversation.com"
+    ]
+    
+    if not links:
+        errormessage += "Keine Artikel im TheConversation RSS-Feed gefunden. Überprüfe die Struktur des Feeds."
+        return None, errormessage
+    return links, errormessage
+
+
+def get_article_headline(article_soup, link, errormessage, found_issues):
+    """Extracts the headline from a The Conversation article. Returns (headline, errormessage, found_issues)."""
+    article_headline = article_soup.find("h1", class_="entry-title")
+    if article_headline is None:
+        errormessage += f"Keine Überschrift gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+    else:
+        article_headline = article_headline.get_text(separator=" ", strip=True)
+    return article_headline, errormessage, found_issues
+
+
+def get_article_text(article_soup, link, errormessage, found_issues):
+    """Extracts the body text from a The Conversation article. Returns (text, errormessage, found_issues)."""
+    content_div = article_soup.find("div", itemprop="articleBody")
+    if content_div is None:
+        errormessage += f"Keine Artikeltext gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+        return "", errormessage, found_issues
+
+    paragraphs = content_div.find_all("p")
+    if not paragraphs:
+        errormessage += f"Keine Absätze gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+        return "", errormessage, found_issues
+
+    article_text = ""
+    for p in paragraphs:
+        text = p.get_text(strip=True)
+        if text:
+            article_text += f"\n{text}"
+
+    if len(article_text) < 50:
+        errormessage += f"Artikeltext zu kurz, überspringe Artikel: {link}.\n"
+        found_issues += 1
+
+    return article_text, errormessage, found_issues
+
+
+def get_article_date(article_soup, link, errormessage, found_issues):
+    """Extracts the date from a The Conversation article. Returns (date, errormessage, found_issues)."""
+    date_element = article_soup.find("time")
+    if date_element is None or not date_element.has_attr('datetime'):
+        errormessage += f"Kein Datum gefunden, überspringe Artikel: {link}.\n"
+        found_issues += 1
+        return "Kein Datum gefunden.", errormessage, found_issues
+
+    article_date = date_element.get_text(strip=True)
+    return article_date, errormessage, found_issues
+
+
+def scrape_article(link , article_request = None):
+    """Scrapes a single The Conversation article. Returns ([headline, link, date, text, scraped_at], errormessage)."""
+    error_message = ""
+    if not link.startswith("http"):
+        link = "https://theconversation.com" + link
+    if "theconversation.com" not in link:
+        error_message += f"Ungültiger URL, überspringe Artikel: {link}.\n"
+        return None, error_message
+    if article_request is None:
+        article_request = requests.get(link, headers=headers)
+    if article_request.status_code != 200:
+        error_message += f"Keine Antwort. Status Code: {article_request.status_code}"
+        return None, error_message
+    try:
+        found_issues = 0
+        article_soup = BeautifulSoup(article_request.text, "html.parser")
+
+        article_headline, error_message, found_issues = get_article_headline(article_soup, link, error_message, found_issues)
+        article_text, error_message, found_issues = get_article_text(article_soup, link, error_message, found_issues)
+        article_date, error_message, found_issues = get_article_date(article_soup, link, error_message, found_issues)
+
+        
+        if found_issues > 0:
+            print(f"{error_message}Artikel hat {found_issues} fehlende Elemente, überspringe Artikel: {link}.\nFalls dies häufig vorkommt, überprüfe die Struktur der Webseite.\n")
+            return None,error_message
+        
+    except Exception as e:
+        error_message += f"Fehler beim Scrapen des Artikels: {e}, link: {link}"
+        return None,error_message
+
+    return [
+        article_headline, 
+        link, 
+        article_date, 
+        article_text.strip(), 
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ], error_message
+        
+    
+
+
+def scrape_theconversation():
+    """Scrapes all articles from The Conversation. Returns (articles, errormessage)."""
+    articles = []
+    all_errors = ""
+    articles_link, error_message = get_links_from_theconversation_rss()
+    all_errors += f"{error_message}\n"
+    if articles_link is None:
+        print(error_message)
+        return [],error_message
+    else:
+        for link in articles_link:
+            article,error_message = scrape_article(link)
+            articles.append(article)
+            all_errors += error_message
+            time.sleep(2)
+        return articles, all_errors
+
+
+if __name__ == "__main__":
+    print("Starte The Conversation Scraping")
+    theconversation_articles,error_message = scrape_theconversation()
+    print("The Conversation abgeschlossen")
+    if error_message:
+        print(f"Fehlermeldungen: {error_message}")
+    for article in theconversation_articles:
+        if article is not None:
+            print(f"Headline: {article[0]}")
+            print(f"Link: {article[1]}")
+            print(f"Datum: {article[2]}")
+            print(f"Artikeltext: {article[3][:200]}...")
+            print(f"Scraped am: {article[4]}")
+            print("-" * 80)
