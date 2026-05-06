@@ -24,6 +24,11 @@ This project collects online news articles, classifies them into categories, cre
 
 ## Setup
 
+Recommended environment:
+
+- Python 3.14 was used during development and testing
+- install dependencies from `requirements.txt`
+
 Install dependencies:
 
 ```bash
@@ -31,6 +36,13 @@ python3 -m pip install -r requirements.txt
 ```
 
 Create a `.env` file based on `.env.example`.
+
+How to get a Groq API key:
+
+1. create a Groq account at [console.groq.com](https://console.groq.com/)
+2. open the API Keys section in the Groq console
+3. create a new API key
+4. copy the key into your local `.env` file as `GROQ_API_KEY`
 
 Required values:
 
