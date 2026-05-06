@@ -1,57 +1,26 @@
-# Data Science Projekt
+# AI News Summarizer
 
-This project builds an AI news pipeline:
+This project collects online news articles, classifies them into categories, creates AI-generated digests, stores the results in a local SQLite database, and sends category-based email newsletters to subscribers.
 
-1. collect news articles
-2. classify and summarize them with an LLM
-3. store summaries in the database
-4. send category-based email newsletters to subscribers
+## Features
+
+- scrape articles from Tagesschau and The Conversation
+- classify articles into `POLITICS`, `ECONOMY`, `TECHNOLOGY`, `SPORTS`, and `CULTURE`
+- build category digests with Groq
+- store articles, digests, subscribers, and delivery results in SQLite
+- send newsletters via SMTP
+- register subscribers with category preferences in a Streamlit panel
 
 ## Project Structure
 
-Source code:
-
-- `src/database/` - database logic
-- `src/llm/` - article classification and summarization
-- `src/mailing/` - newsletter generation and SMTP sending
-- `src/main.py` - future main pipeline entry point
-
-Tests:
-
-- `tests/llm/` - tests for classifier and summarizer
-- `tests/mailing/` - tests for mailing logic
-- `tests/database/` - database-related tests
-
-Scripts:
-
-- `scripts/mailing_demo.py` - local demo script for the mailing flow
-
-## Mailing Module
-
-The mailing module:
-
-1. loads the latest unsent summary from the database
-2. reads the summary category
-3. loads active subscribers for that category
-4. builds text and HTML email content
-5. sends emails over SMTP
-6. stores delivery results
-7. marks the summary as sent
-
-Important mailing logic:
-
-- summaries and subscribers now include a `category`
-- newsletters are sent only to subscribers of the matching category
-- SMTP configuration is loaded from `.env`
-
-Main mailing files:
-
-- `src/mailing/newsletter_sender.py`
-- `src/mailing/content_builder.py`
-- `src/mailing/mailer_service.py`
-- `src/mailing/mappers.py`
-- `src/mailing/models.py`
-- `src/mailing/config_mailing.py`
+- `src/database/` - SQLite database logic
+- `src/scraper/` - news scrapers
+- `src/llm/` - classification and summarization
+- `src/mailing/` - newsletter generation and sending
+- `src/register_new_user/` - Streamlit registration panel
+- `src/main.py` - full project pipeline
+- `scripts/` - helper scripts for local setup and demos
+- `tests/` - unit and integration tests
 
 ## Setup
 
@@ -61,13 +30,12 @@ Install dependencies:
 python3 -m pip install -r requirements.txt
 ```
 
-Create a local `.env` file based on `.env.example`.
+Create a `.env` file based on `.env.example`.
 
-Required environment variables:
+Required values:
 
 ```env
 GROQ_API_KEY=your_key_here
-
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USERNAME=your_email@example.com
@@ -79,20 +47,33 @@ SMTP_USE_TLS=true
 Notes:
 
 - do not commit `.env`
-- for Gmail SMTP, use an App Password instead of your normal password
+- for Gmail SMTP, use an app password
+- Groq rate limits can slow down large runs
 
-## Tests
+## How To Run
 
-Run all mailing tests:
+Initialize a fresh local database:
 
 ```bash
-python3 -m pytest tests/mailing -q
+python3 scripts/reset_database.py
 ```
 
-Run all LLM tests:
+Add example subscribers:
 
 ```bash
-python3 -m pytest tests/llm -q
+python3 scripts/seed_subscribers.py
+```
+
+Run the full pipeline:
+
+```bash
+python3 main.py
+```
+
+Open the registration panel:
+
+```bash
+streamlit run src/register_new_user/Subscribe_panel.py
 ```
 
 Run the mailing demo:
@@ -100,3 +81,30 @@ Run the mailing demo:
 ```bash
 python3 scripts/mailing_demo.py
 ```
+
+## Tests
+
+Run the full test suite:
+
+```bash
+python3 -m pytest -q
+```
+
+Useful subsets:
+
+```bash
+python3 -m pytest tests/database -q
+python3 -m pytest tests/mailing -q
+python3 -m pytest tests/scraping -q
+python3 -m pytest tests/llm/test_classifier.py -q
+python3 -m pytest tests/llm/test_summarizer.py -q
+```
+
+## Current Status
+
+The project is ready for demonstration:
+
+- database, scraping, mailing, and classification are integrated
+- newsletter sending works with category-based subscribers
+- helper scripts are included for reset and test data setup
+- most testing is automated; live API behavior still depends on Groq limits and website availability
