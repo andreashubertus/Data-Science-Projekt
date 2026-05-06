@@ -16,7 +16,11 @@ def get_links_from_theconversation_rss(request=None):
     rss_url = "https://theconversation.com/global/articles.atom"
 
     if request is None:
-        request = requests.get(rss_url, headers=headers)
+        try:
+            request = requests.get(rss_url, headers=headers, timeout=20)
+        except requests.RequestException as exc:
+            errormessage += f"Fehler beim Abrufen des TheConversation RSS-Feeds: {exc}"
+            return None, errormessage
     if request.status_code != 200:
         errormessage += f"Keine Antwort vom TheConversation RSS-Feed. Status Code: {request.status_code}"
         return None, errormessage
@@ -28,12 +32,19 @@ def get_links_from_theconversation_rss(request=None):
         return None, errormessage
 
     namespace = {"atom": "http://www.w3.org/2005/Atom"}
-    links = [
-        link.attrib["href"]
-        for link in root.findall("atom:link", namespace)
-        if link.attrib.get("rel") == "alternate"
-        and link.attrib.get("href") != "https://theconversation.com"
-    ]
+    links = []
+    seen = set()
+
+    for link in root.findall(".//atom:link", namespace):
+        href = link.attrib.get("href")
+        rel = link.attrib.get("rel")
+
+        if rel != "alternate" or not href or href == "https://theconversation.com":
+            continue
+
+        if href not in seen:
+            seen.add(href)
+            links.append(href)
     
     if not links:
         errormessage += "Keine Artikel im TheConversation RSS-Feed gefunden. Überprüfe die Struktur des Feeds."
@@ -100,7 +111,11 @@ def scrape_article(link , article_request = None):
         error_message += f"Ungültiger URL, überspringe Artikel: {link}.\n"
         return None, error_message
     if article_request is None:
-        article_request = requests.get(link, headers=headers)
+        try:
+            article_request = requests.get(link, headers=headers, timeout=20)
+        except requests.RequestException as exc:
+            error_message += f"Fehler beim Abrufen des Artikels: {exc}"
+            return None, error_message
     if article_request.status_code != 200:
         error_message += f"Keine Antwort. Status Code: {article_request.status_code}"
         return None, error_message

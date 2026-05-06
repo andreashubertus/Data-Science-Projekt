@@ -33,11 +33,38 @@ class TestGetLinksFromTheConversationRss:
         assert "https://theconversation.com/article-one-123" in links
         assert "https://theconversation.com/article-two-456" in links
 
+    def test_returns_links_from_nested_atom_entries(self):
+        rss_nested = """<?xml version="1.0" encoding="UTF-8"?>
+        <feed xmlns="http://www.w3.org/2005/Atom">
+            <link rel="alternate" href="https://theconversation.com"/>
+            <entry>
+                <title>Article One</title>
+                <link rel="alternate" href="https://theconversation.com/article-one-123"/>
+            </entry>
+            <entry>
+                <title>Article Two</title>
+                <link rel="alternate" href="https://theconversation.com/article-two-456"/>
+            </entry>
+        </feed>"""
+        mock = make_mock_request(rss_nested, is_bytes=True)
+        links, error = get_links_from_theconversation_rss(request=mock)
+        assert error == ""
+        assert links == [
+            "https://theconversation.com/article-one-123",
+            "https://theconversation.com/article-two-456",
+        ]
+
     def test_returns_error_on_bad_status_code(self):
         mock = make_mock_request(self.RSS_OK, status_code=503, is_bytes=True)
         links, error = get_links_from_theconversation_rss(request=mock)
         assert links is None
         assert "Keine Antwort vom TheConversation RSS-Feed. Status Code: 503" in error
+
+    def test_returns_error_on_request_exception(self):
+        with patch("src.scraper.scraper_theconversation.requests.get", side_effect=requests.RequestException("network down")):
+            links, error = get_links_from_theconversation_rss()
+        assert links is None
+        assert "Fehler beim Abrufen des TheConversation RSS-Feeds" in error
 
     def test_returns_error_on_empty_feed(self):
         empty_rss = """<?xml version="1.0" encoding="UTF-8"?>
@@ -248,6 +275,12 @@ class TestScrapeArticle:
         article_data, error_message = scrape_article("https://theconversation.com/test-article", article_request=mock)
         assert article_data is None
         assert "Keine Antwort. Status Code: 404" in error_message
+
+    def test_returns_error_when_article_request_fails(self):
+        with patch("src.scraper.scraper_theconversation.requests.get", side_effect=requests.RequestException("network down")):
+            article_data, error_message = scrape_article("https://theconversation.com/test-article")
+        assert article_data is None
+        assert "Fehler beim Abrufen des Artikels" in error_message
 
     def test_returns_none_when_article_has_no_headline(self):
         ARTICLE_HTML_MISSING_HEADLINE = """
