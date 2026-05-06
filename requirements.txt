@@ -3,6 +3,7 @@ beautifulsoup4==4.13.4
 groq==1.2.0
 python-dotenv==1.1.0
 requests==2.32.3
+streamlit==1.45.1
 
 # Development and test dependencies
 pytest==9.0.2

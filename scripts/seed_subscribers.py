@@ -19,7 +19,7 @@ TEST_SUBSCRIBERS = [
         "categories": ALL_CATEGORIES,
     },
     {
-        "email": "andreas.huberstus@gmx.de",
+        "email": "andreas.hubertus@gmx.de",
         "name": "Subscriber Two",
         "categories": ALL_CATEGORIES,
     },
