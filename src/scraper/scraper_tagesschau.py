@@ -17,7 +17,7 @@ def is_valid_link(url):
     ]
     if not url or url in exclude_list:
         return False
-    if url.startswith("https://www.tagesschau.de/multimedia/podcast/") or url.startswith("https://www.sportschau.de"):
+    if url.startswith("https://www.tagesschau.de/multimedia/podcast/") or url.startswith("/multimedia/podcast/") or url.startswith("https://www.sportschau.de"):
         return False
     if not url.startswith("https://www.tagesschau.de") and not url.startswith("/"):
         return False
