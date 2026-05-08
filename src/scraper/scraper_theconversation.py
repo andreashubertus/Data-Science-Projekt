@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import time
-import xml.etree.ElementTree as ET
 
 headers = {
     'User-Agent': 'DHBW Data Science student - Web Scraping for educational purposes)'
@@ -24,32 +23,14 @@ def get_links_from_theconversation_rss(request=None):
     if request.status_code != 200:
         errormessage += f"Keine Antwort vom TheConversation RSS-Feed. Status Code: {request.status_code}"
         return None, errormessage
-
-    try:
-        root = ET.fromstring(request.content)
-    except ET.ParseError as exc:
-        errormessage += f"RSS-Feed konnte nicht geparst werden: {exc}"
-        return None, errormessage
-
-    namespace = {"atom": "http://www.w3.org/2005/Atom"}
-    links = []
-    seen = set()
-
-    for link in root.findall(".//atom:link", namespace):
-        href = link.attrib.get("href")
-        rel = link.attrib.get("rel")
-
-        if rel != "alternate" or not href or href == "https://theconversation.com":
-            continue
-
-        if href not in seen:
-            seen.add(href)
-            links.append(href)
+    soup = BeautifulSoup(request.content, "xml")
+    links = [link['href'] for link in soup.find_all('link') if 'rel' in link.attrs and link['rel'] == 'alternate' and link['href'] not in ["https://theconversation.com"]]
     
     if not links:
         errormessage += "Keine Artikel im TheConversation RSS-Feed gefunden. Überprüfe die Struktur des Feeds."
         return None, errormessage
     return links, errormessage
+
 
 
 def get_article_headline(article_soup, link, errormessage, found_issues):
