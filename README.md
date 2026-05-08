@@ -64,6 +64,12 @@ Notes:
 
 ## How To Run
 
+Run a scraping demo:
+
+```bash 
+python3 src/scraper/main_scraper.py
+```
+
 Initialize a fresh local database:
 
 ```bash
