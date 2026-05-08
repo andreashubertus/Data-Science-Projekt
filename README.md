@@ -96,11 +96,33 @@ python3 scripts/mailing_demo.py
 
 ## Tests
 
-Run the full test suite:
+Run the standard full test suite:
 
 ```bash
 python3 -m pytest -q
 ```
+
+This includes unit tests and local integration tests that do not require live
+Groq API calls.
+
+Run the Groq integration tests separately:
+
+```bash
+RUN_GROQ_INTEGRATION=1 python3 -m pytest tests/llm/test_groq_integration.py -q
+```
+
+To run everything, use both commands:
+
+```bash
+python3 -m pytest -q
+RUN_GROQ_INTEGRATION=1 python3 -m pytest tests/llm/test_groq_integration.py -q
+```
+
+Requirements for Groq integration tests:
+
+- `GROQ_API_KEY` must be set in `.env`
+- internet connection must be available
+- the tests may fail or slow down because of Groq rate limits or temporary API/network issues
 
 Useful subsets:
 
@@ -110,6 +132,7 @@ python3 -m pytest tests/mailing -q
 python3 -m pytest tests/scraping -q
 python3 -m pytest tests/llm/test_classifier.py -q
 python3 -m pytest tests/llm/test_summarizer.py -q
+RUN_GROQ_INTEGRATION=1 python3 -m pytest tests/llm/test_groq_integration.py -q
 ```
 
 ## Current Status
